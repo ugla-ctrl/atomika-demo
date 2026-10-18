@@ -276,19 +276,16 @@ function arcBand(y0, y1, gaps){
 wallBand(20,-13,-9,0,0,lccWall); wallBand(20,-21,-13,Math.PI,0.16,lccWall);
 wallBand(20,-26,-21,0,0,lccWall); arcBand(-34,-26,[[TUN,0.22],[LOW,0.14]]);
 { const g = new THREE.SphereGeometry(20,32,8,0,Math.PI*2,0,Math.PI/2); const m = add(g, D('#2f2f2d'), C.x,-9,C.z); m.scale.y = 0.22; }
-{ const s = new THREE.Shape(); s.absarc(C.x,-C.z,19.8,0,Math.PI*2,false); const h = new THREE.Path(); h.absarc(C.x,-C.z,7.5,0,Math.PI*2,true); s.holes.push(h);
-  const g = new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false,curveSegments:48}); g.rotateX(-Math.PI/2); g.translate(0,-22,0); add(g, D('#7d6e5c')); }
+{ const s = new THREE.Shape(); s.absarc(C.x,-C.z,19.8,0,Math.PI*2,false);   const g = new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false,curveSegments:48}); g.rotateX(-Math.PI/2); g.translate(0,-22,0); add(g, D('#7d6e5c')); }
 { const g = new THREE.CircleGeometry(19.8,48); g.rotateX(-Math.PI/2); add(g, D('#6f6252'), C.x,-34,C.z); }
-/* central column with its flared capital, the open well around it, and the railing */
-add(new THREE.CylinderGeometry(2.4,2.4,25,24), M('#d6d2ca'), C.x,-21.5,C.z);
-add(new THREE.CylinderGeometry(9,2.4,4.5,40,1,true), D('#d6d2ca'), C.x,-11.25,C.z);
+/* central column with its flared capital (solid floor at Level -1, no opening) */
+add(new THREE.CylinderGeometry(1.6,1.6,25,24), M('#d6d2ca'), C.x,-21.5,C.z);
+add(new THREE.CylinderGeometry(7,1.6,4,40,1,true), D('#d6d2ca'), C.x,-11,C.z);
 const ringAt = (r, tube, y, color) => { const m = add(new THREE.TorusGeometry(r,tube,4,72), G(color), C.x,y,C.z); m.rotation.x = Math.PI/2; return m; };
-ringAt(9, 0.18, -9.1, '#FF8C01');
-ringAt(7.6, 0.12, -17.6, '#9a9a97'); ringAt(7.6, 0.1, -20.9, '#FF8C01');
-for (let i=0;i<16;i++){ const a = i/16*Math.PI*2; box(0.12,3.4,0.12, M('#9a9a97'), C.x+7.6*Math.sin(a), -19.3, C.z+7.6*Math.cos(a)); }
+ringAt(7, 0.16, -9.1, '#FF8C01');
 ringAt(19.5, 0.15, -10.2, '#FF8C01'); ringAt(19.5, 0.15, -23, '#FF8C01');
 /* seating as shown in the event render */
-{ const pg = new THREE.CylinderGeometry(1.3,1.3,1.4,12), pm = M('#ece8e0');
+{ const pg = new THREE.CylinderGeometry(0.95,0.95,1.5,12), pm = M('#ece8e0');
   for (let i=0;i<14;i++){ const a = i/14*Math.PI*2 + 0.2; if (Math.abs(((a-Math.PI+Math.PI*3)%(Math.PI*2))-Math.PI) < 0.4) continue; add(pg, pm, C.x+13.5*Math.sin(a), -20.3, C.z+13.5*Math.cos(a)); }
   for (let i=0;i<12;i++){ const a = i/12*Math.PI*2 + 0.1; const near = c => Math.abs(((a-c+Math.PI*3)%(Math.PI*2))-Math.PI) < 0.45; if (near(TUN) || near(LOW)) continue; add(pg, pm, C.x+13*Math.sin(a), -33.3, C.z+13*Math.cos(a)); } }
 { const l = new THREE.PointLight('#ffb878', 1.3, 42, 1.4); l.position.set(-45,-12,-95); scene.add(l); }
