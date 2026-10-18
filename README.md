@@ -1,6 +1,6 @@
 # Enter the Silo
 
-Interactive 3D prototype for ATOMIKA: a descent from the sky over Roswell into the Twistflower Atlas F missile silo, through the launch control center, and up through the open silo doors.
+Interactive 3D prototype for ATOMIKA: a descent from the sky over Roswell into the Twistflower missile silo, through the launch control center, and up through the open silo doors.
 
 Live at https://demo.atomikafest.com
 
@@ -8,4 +8,4 @@ Live at https://demo.atomikafest.com
 - `og.png` is the social share image.
 - Hosted on GitHub Pages; `CNAME` sets the custom domain.
 
-Layout follows the 1962 Atlas F engineering record, satellite views, the festival map and the sponsor deck renders. Interior geometry is approximate.
+Layout follows historical engineering records, satellite views, the LiDAR views and renders in the sponsor deck, and the festival map. Interior geometry is approximate.

@@ -240,47 +240,59 @@ box(8,0.4,5, M('#4a4a48'), -1,-0.2,-122);
 { const T = new THREE.Vector3(-4,4.3,-122), B = new THREE.Vector3(-37,-17.4,-122); const L = T.distanceTo(B), wall = D('#3d3d3b');
   const m = add(new THREE.BoxGeometry(L,9,5.6), [HIDE,HIDE,wall,wall,wall,wall], (T.x+B.x)/2, (T.y+B.y)/2, -122);
   m.rotation.z = Math.atan2(T.y-B.y, T.x-B.x); }
-{ const w = D('#444442'); add(new THREE.BoxGeometry(10,9,6), [HIDE,w,w,w,HIDE,w], -42,-16.5,-122); }
-{ const w = D('#444442'); add(new THREE.BoxGeometry(5,8,5.5), [w,w,w,w,HIDE,HIDE], -45,-17,-116.25); }
-box(4,7,0.5, M('#7d7d7a'), -39.6,-17.5,-124.5);
+/* stair shaft, outside the LCC: entrapment landing at Level -1, a second flight down to the Level -2 door */
+{ const w = D('#444442');
+  add(new THREE.BoxGeometry(21,22,9), [HIDE,w,w,w,HIDE,w], -47.5,-23,-123.5);
+  box(0.3,13,9, w, -37,-27.5,-123.5);
+  box(5.5,22,0.3, w, -39.75,-23,-119); box(5,22,0.3, w, -50,-23,-119);
+  box(5,13,0.3, w, -45,-27.5,-119); box(5,1,0.3, w, -45,-12.5,-119);
+  box(5,14,0.3, w, -55,-19,-119); box(0.5,22,0.3, w, -57.75,-23,-119);
+  add(new THREE.BoxGeometry(5,8,5.5), [w,w,w,w,HIDE,HIDE], -45,-17,-116.25);
+  add(new THREE.BoxGeometry(5,8,8), [w,w,w,w,HIDE,HIDE], -55,-30,-115); }
+box(10.5,0.5,5, M('#55554f'), -42.25,-21.25,-121.5);
+box(10.5,0.12,0.12, M('#9a9a97'), -42.25,-17.6,-124); for (let i=0;i<5;i++) box(0.12,3.4,0.12, M('#9a9a97'), -37.5-i*2.5,-19.3,-124);
+{ const sg = new THREE.BoxGeometry(1.06,0.765,4), sm = M('#5a5a57');
+  for (let i=0;i<17;i++){ const ytop = -21 - (i+1)*13/17; add(sg, sm, -37.5 - i, ytop-0.38, -126); } }
+box(5,0.5,9, M('#55554f'), -55.5,-34.25,-123.5);
 box(6,0.8,0.8, M('#6b6b69'), -45,-12.6,-119); box(0.8,8,0.8, M('#6b6b69'), -47.9,-17,-119); box(0.8,8,0.8, M('#6b6b69'), -42.1,-17,-119);
-box(0.6,7.5,4.4, M('#8a8a87'), -46.6,-17,-121.5); box(0.1,0.4,3, G('#FF7E1D'), -46.25,-14.5,-121.5);
+box(6,0.8,0.8, M('#6b6b69'), -55,-25.6,-119); box(0.8,8,0.8, M('#6b6b69'), -57.9,-30,-119); box(0.8,8,0.8, M('#6b6b69'), -52.1,-30,-119);
+box(0.6,7.5,4.4, M('#8a8a87'), -47.1,-17,-116.6); box(0.1,0.4,3, G('#FF7E1D'), -46.75,-14.5,-116.6);
 { const l = new THREE.PointLight('#cfeeff', 0.9, 20, 1.5); l.position.set(-42,-13.5,-122); scene.add(l); }
+{ const l = new THREE.PointLight('#cfeeff', 0.8, 22, 1.5); l.position.set(-50,-26,-124); scene.add(l); }
 { const l = new THREE.PointLight('#ffffff', 0.55, 30, 1.5); l.position.set(-20,-3,-122); scene.add(l); }
 
-/* ---------- launch control center ---------- */
+/* ---------- launch control center (as renovated: open round rooms around a central column) ---------- */
 const C = new THREE.Vector3(-45,0,-95);
-const TUN = Math.atan2(0.428, 0.904); /* direction from LCC to silo, in cylinder theta */
+const TUN = Math.atan2(0.428, 0.904); /* toward the silo */
+const LOW = Math.atan2(-10, -17.3);   /* Level -2 door from the stair shaft */
+const lccWall = D('#3a3a38');
 function wallBand(r, y0, y1, gapAt, gapW, mat){
   const g = gapW ? new THREE.CylinderGeometry(r,r,y1-y0,48,1,true, gapAt+gapW, Math.PI*2-2*gapW) : new THREE.CylinderGeometry(r,r,y1-y0,48,1,true);
   return add(g, mat, C.x, (y0+y1)/2, C.z); }
-const lccWall = D('#3a3a38');
+function arcBand(y0, y1, gaps){
+  const iv = gaps.map(([c,h]) => [(((c-h)%(Math.PI*2))+Math.PI*2)%(Math.PI*2), 2*h]).sort((a,b) => a[0]-b[0]);
+  for (let i=0;i<iv.length;i++){ const s0 = iv[i][0]+iv[i][1], e = i+1<iv.length ? iv[i+1][0] : iv[0][0]+Math.PI*2;
+    if (e - s0 > 0.01) add(new THREE.CylinderGeometry(20,20,y1-y0,48,1,true,s0,e-s0), lccWall, C.x,(y0+y1)/2,C.z); } }
 wallBand(20,-13,-9,0,0,lccWall); wallBand(20,-21,-13,Math.PI,0.16,lccWall);
-wallBand(20,-26,-21,0,0,lccWall); wallBand(20,-34,-26,TUN,0.22,lccWall);
+wallBand(20,-26,-21,0,0,lccWall); arcBand(-34,-26,[[TUN,0.22],[LOW,0.14]]);
 { const g = new THREE.SphereGeometry(20,32,8,0,Math.PI*2,0,Math.PI/2); const m = add(g, D('#2f2f2d'), C.x,-9,C.z); m.scale.y = 0.22; }
-{ const s = new THREE.Shape(); s.absarc(C.x,-C.z,19.8,0,Math.PI*2,false); s.holes.push(rectPath(-57,-97,-51,-89));
-  const g = new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false,curveSegments:40}); g.rotateX(-Math.PI/2); g.translate(0,-22,0); add(g, D('#4f4f4c')); }
-{ const g = new THREE.CircleGeometry(19.8,40); g.rotateX(-Math.PI/2); add(g, D('#4a4a47'), C.x,-34,C.z); }
-for (let i=0;i<8;i++){ const a = i*Math.PI/4 + Math.PI/8; box(0.6,25,0.6, M('#5a5a57'), C.x+18.6*Math.sin(a), -21.5, C.z+18.6*Math.cos(a)); }
-for (let i=0;i<4;i++){ const a = Math.PI/4 + i*Math.PI/2, x = C.x+15*Math.sin(a), z = C.z+15*Math.cos(a);
-  add(new THREE.CylinderGeometry(0.25,0.25,12,8), M('#8a8a87'), x,-15,z); add(new THREE.CylinderGeometry(1,1,4.5,10), M('#9a9a96'), x,-12.6,z); }
-/* upper level: bunks, galley, table */
-[-103,-86].forEach(z => { box(3.2,0.5,7, M('#6a6a67'), -61,-19.6,z); box(3.2,0.5,7, M('#6a6a67'), -61,-16.8,z); box(3.4,0.3,7.2, M('#2e4a5c'), -61,-16.4,z); });
-box(2.6,3,8, M('#6f6f6c'), -29.8,-19.5,-104); box(2.8,0.2,8.2, M('#a3a3a0'), -29.8,-17.9,-104);
-box(5,0.3,3, M('#7a7a77'), -40,-18.3,-91);
-for (let i=0;i<13;i++) box(5,0.25,0.9, M('#6a6a67'), -54, -21.6-i*0.95, -96.6+i*0.7);
-{ const l = new THREE.PointLight('#ffd1a1', 1.25, 42, 1.4); l.position.set(-45,-11.5,-95); scene.add(l); }
-/* lower level: launch control panels, console, racks */
-{ const pal = ['#01CFFE','#FF7E1D','#FF0000','#FFEEA9','#01CFFE','#34D9FD'];
-  for (let i=0;i<7;i++){ const a = 3.6 + i*0.27; const x = C.x+17*Math.sin(a), z = C.z+17*Math.cos(a);
-    const g = new THREE.Group(); g.position.set(x,-30.5,z); g.rotation.y = a + Math.PI; scene.add(g);
-    const cab = new THREE.Mesh(new THREE.BoxGeometry(4.4,7,2), M('#4b4b49')); g.add(cab);
-    for (let k=0;k<6;k++){ const li = new THREE.Mesh(new THREE.BoxGeometry(0.55,0.35,0.1), G(pal[(i+k)%pal.length])); li.position.set(-1.2+(k%3)*1.2, 1.8-(k>2?1:0)*0.9, 1.05); g.add(li); }
-    const sc = new THREE.Mesh(new THREE.BoxGeometry(3,1.4,0.1), G('#0b2a33')); sc.position.set(0,-0.4,1.05); g.add(sc); }
-  const a = 4.36, cg = new THREE.Group(); cg.position.set(C.x+10.5*Math.sin(a), -32.6, C.z+10.5*Math.cos(a)); cg.rotation.y = a + Math.PI; scene.add(cg);
-  cg.add(new THREE.Mesh(new THREE.BoxGeometry(9,2.8,3), M('#7c7c79'))); const strip = new THREE.Mesh(new THREE.BoxGeometry(8,0.12,0.3), G('#01CFFE')); strip.position.set(0,1.45,1.2); cg.add(strip);
-  for (let i=0;i<3;i++){ const b = 1.7 + i*0.32; box(3,8,2, M('#424240'), C.x+17.5*Math.sin(b), -30, C.z+17.5*Math.cos(b), b); } }
-{ const l = new THREE.PointLight('#9fdcff', 1.25, 40, 1.4); l.position.set(-45,-24,-95); scene.add(l); }
+{ const s = new THREE.Shape(); s.absarc(C.x,-C.z,19.8,0,Math.PI*2,false); const h = new THREE.Path(); h.absarc(C.x,-C.z,7.5,0,Math.PI*2,true); s.holes.push(h);
+  const g = new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false,curveSegments:48}); g.rotateX(-Math.PI/2); g.translate(0,-22,0); add(g, D('#7d6e5c')); }
+{ const g = new THREE.CircleGeometry(19.8,48); g.rotateX(-Math.PI/2); add(g, D('#6f6252'), C.x,-34,C.z); }
+/* central column with its flared capital, the open well around it, and the railing */
+add(new THREE.CylinderGeometry(2.4,2.4,25,24), M('#d6d2ca'), C.x,-21.5,C.z);
+add(new THREE.CylinderGeometry(9,2.4,4.5,40,1,true), D('#d6d2ca'), C.x,-11.25,C.z);
+const ringAt = (r, tube, y, color) => { const m = add(new THREE.TorusGeometry(r,tube,4,72), G(color), C.x,y,C.z); m.rotation.x = Math.PI/2; return m; };
+ringAt(9, 0.18, -9.1, '#FF8C01');
+ringAt(7.6, 0.12, -17.6, '#9a9a97'); ringAt(7.6, 0.1, -20.9, '#FF8C01');
+for (let i=0;i<16;i++){ const a = i/16*Math.PI*2; box(0.12,3.4,0.12, M('#9a9a97'), C.x+7.6*Math.sin(a), -19.3, C.z+7.6*Math.cos(a)); }
+ringAt(19.5, 0.15, -10.2, '#FF8C01'); ringAt(19.5, 0.15, -23, '#FF8C01');
+/* seating as shown in the event render */
+{ const pg = new THREE.CylinderGeometry(1.3,1.3,1.4,12), pm = M('#ece8e0');
+  for (let i=0;i<14;i++){ const a = i/14*Math.PI*2 + 0.2; if (Math.abs(((a-Math.PI+Math.PI*3)%(Math.PI*2))-Math.PI) < 0.4) continue; add(pg, pm, C.x+13.5*Math.sin(a), -20.3, C.z+13.5*Math.cos(a)); }
+  for (let i=0;i<12;i++){ const a = i/12*Math.PI*2 + 0.1; const near = c => Math.abs(((a-c+Math.PI*3)%(Math.PI*2))-Math.PI) < 0.45; if (near(TUN) || near(LOW)) continue; add(pg, pm, C.x+13*Math.sin(a), -33.3, C.z+13*Math.cos(a)); } }
+{ const l = new THREE.PointLight('#ffb878', 1.3, 42, 1.4); l.position.set(-45,-12,-95); scene.add(l); }
+{ const l = new THREE.PointLight('#ffb070', 1.15, 40, 1.4); l.position.set(-45,-25,-95); scene.add(l); }
 
 /* ---------- tunnel ---------- */
 const TA = new THREE.Vector3(-36.4,-30,-76.9), TB = new THREE.Vector3(-11.1,-30,-23.5);
@@ -321,7 +333,6 @@ const beams = [];
 
 /* gooseneck vents beside the entry (seen in the LiDAR photo) and the LCC's central column */
 [[8,-114],[-22,-128]].forEach(([x,z]) => { add(new THREE.CylinderGeometry(0.5,0.5,4,8), M('#9a9a97'), x,2,z); const t = add(new THREE.TorusGeometry(1.4,0.5,6,12,Math.PI), M('#9a9a97'), x+1.4,4,z); add(new THREE.CylinderGeometry(0.5,0.5,2.5,8), M('#9a9a97'), x+2.8,2.75,z); });
-add(new THREE.CylinderGeometry(0.9,0.9,25,12), M('#6e6e6b'), C.x,-21.5,C.z);
 
 /* ---------- festival build (positions follow the published festival map; sizes approximate) ---------- */
 const flatRing = (r, w, color, x, z, op) => { const g = new THREE.RingGeometry(r-w/2, r+w/2, 72); g.rotateX(-Math.PI/2); return add(g, new THREE.MeshBasicMaterial({color, transparent:true, opacity:op||0.85, depthWrite:false}), x, 0.35, z); };
@@ -374,11 +385,15 @@ const K = [
   {p:V(38,9,-106), t:V(0,4,-122), s:4},
   {p:V(5,5,-122), t:V(-12,1,-122)},
   {p:V(-20,-4.5,-122), t:V(-40,-17,-122)},
-  {p:V(-38.8,-15.5,-123.2), t:V(-45,-16.5,-116), s:5},
+  {p:V(-43.5,-15.5,-123.6), t:V(-45,-16.5,-112), s:5},
   {p:V(-44.8,-16,-120.3), t:V(-45,-16.5,-104)},
   {p:V(-42,-15,-110), t:V(-50,-17.5,-88), s:6},
-  {p:V(-54,-15,-99.5), t:V(-54,-32,-90)},
-  {p:V(-54,-27,-92), t:V(-46,-29,-100)},
+  {p:V(-45,-15.5,-117.5), t:V(-45,-16,-126)},
+  {p:V(-41,-15.5,-122), t:V(-56,-30,-126)},
+  {p:V(-47,-23.5,-126), t:V(-58,-31,-126)},
+  {p:V(-55,-28.5,-122.5), t:V(-55,-29,-108)},
+  {p:V(-55,-28.5,-112), t:V(-45,-29,-95)},
+  {p:V(-33,-27.5,-100), t:V(-45,-29,-95)},
   {p:V(-38,-27.5,-84), t:V(-58,-29.5,-100), s:7},
   {p:V(-37.6,-29.5,-79.5), t:V(-11,-30,-23.5)},
   {p:V(-33,-29.6,-70.5), t:V(-11,-30,-23.5), s:8},
@@ -391,14 +406,14 @@ const K = [
 ];
 const STOPS = [
   {name:'Roswell', eyebrow:'Roswell, New Mexico', title:'A Signal in the Desert', desc:'High desert, about 3,600 feet up. North of town, something is transmitting.'},
-  {name:'Approach', eyebrow:'The Approach', title:'Twistflower', desc:'A dozen Atlas F missile sites once ringed Roswell. This is the one that still calls.'},
-  {name:'Festival Grounds', eyebrow:'May 7–9, 2027', title:'Above and Below the Desert', desc:'The Twistflower Stage, the Stardome, Base Camp, and five camps for 1,000 curious minds, all within sight of the silo.', orbit:true},
+  {name:'Approach', eyebrow:'The Approach', title:'Twistflower', desc:'At the height of the Cold War, Twistflower stood at the leading edge of America’s defenses, on alert for an order that never came.'},
+  {name:'Festival Grounds', eyebrow:'May 7–9, 2027', title:'Above and Below the Desert', desc:'The Twistflower Stage, the Stardome, Base Camp, and five camps for curious minds, all within sight of the silo.', orbit:true},
   {name:'The Site', eyebrow:'Surface', title:'The Site', desc:'From above, only a stairwell, a hatch, and two enormous doors give it away.', orbit:true},
-  {name:'Entry', eyebrow:'Surface · Entry', title:'The Entry', desc:'The only way the crew came in. Stairs drop two flights to a pair of blast doors.'},
+  {name:'Entry', eyebrow:'Surface · Entry', title:'The Entry', desc:'The only way the crew came in. Stairs drop through a concrete shaft to a pair of blast doors.'},
   {name:'Entrapment', eyebrow:'Below grade', title:'Entrapment Area', desc:'Two interlocked doors. One must close before the other will open.'},
-  {name:'Crew Quarters', eyebrow:'LCC · Level −1', title:'Crew Quarters', desc:'Bunks, a galley, and a hatch to the surface. The floor hangs from four air cylinders, built to ride out a nearby blast.'},
-  {name:'Launch Control', eyebrow:'LCC · Level −2', title:'Launch Control', desc:'Five crew stood alert at this bank of panels. From order to launch took about ten minutes.'},
-  {name:'Tunnel', eyebrow:'LCC · Level −2', title:'The Tunnel', desc:'An eight-foot steel tube to the missile, sealed by three blast doors.'},
+  {name:'Upper Chamber', eyebrow:'LCC · Level −1', title:'The Upper Chamber', desc:'Once the crew’s quarters. Now one open round room, forty feet across, gathered around a single column.'},
+  {name:'Launch Control', eyebrow:'LCC · Level −2', title:'Launch Control', desc:'This is where the order would have come. Today the lower room is open and quiet, waiting for a different kind of transmission.'},
+  {name:'Tunnel', eyebrow:'LCC · Level −2', title:'The Tunnel', desc:'An eight-foot steel tube to the silo, sealed by blast doors.'},
   {name:'The Silo', eyebrow:'Silo', title:'The Silo', desc:'One hundred seventy-four feet down and fifty-two across. Look down.'},
   {name:'The Doors', eyebrow:'Surface', title:'Through the Doors', desc:'Up and out, through doors of about seventy-five tons each. The silo is calling.'}
 ];
