@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Enter the Silo | ATOMIKA</title>
+<meta name="description" content="Fly from the night sky over Roswell into the Twistflower missile silo. An interactive descent through the launch control center and up through the open silo doors. ATOMIKA, May 7-9, 2027.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#000000">
+<link rel="icon" type="image/png" href="https://www.atomikafest.com/images/favicon.png">
+<link rel="apple-touch-icon" href="https://www.atomikafest.com/images/favicon.png">
+<link rel="canonical" href="https://demo.atomikafest.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ATOMIKA">
+<meta property="og:url" content="https://demo.atomikafest.com/">
+<meta property="og:title" content="Enter the Silo | ATOMIKA">
+<meta property="og:description" content="An interactive descent into the Twistflower missile silo near Roswell, New Mexico. ATOMIKA, May 7-9, 2027.">
+<meta property="og:image" content="https://demo.atomikafest.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A low-poly render of the Twistflower silo at night, doors open, with laser beams rising into the sky.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Enter the Silo | ATOMIKA">
+<meta name="twitter:description" content="An interactive descent into the Twistflower missile silo near Roswell, New Mexico.">
+<meta name="twitter:image" content="https://demo.atomikafest.com/og.png">
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a full-bleed 3D stage; ATOMIKA UI floats over it (top bar, station card bottom-left, station rail on the right at desktop width). Single dark look, by design. */
+:root{
+  --bg:#000000;
+  --fg:#ffffff;
+  --muted:#A3A3A3;
+  --line:#2B2B2B;
+  --panel:rgba(8,8,8,0.82);
+  --orange:#FF7E1D;
+  --cyan:#01CFFE;
+  --blue:#0077D8;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;background:var(--bg);color:var(--fg);overflow:hidden}
+body{font-family:var(--display);-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0;background:var(--bg)}
+#c{display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none}
+#c.dragging{cursor:grabbing}
+.top{position:fixed;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
+.top svg{height:16px;width:auto;display:block}
+.readout{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.06em}
+.readout span{padding:5px 9px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+#depth{color:var(--cyan);font-variant-numeric:tabular-nums}
+.card{position:fixed;z-index:6;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  width:min(430px,calc(100vw - 32px));box-sizing:border-box;background:var(--panel);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;font-stretch:112%;letter-spacing:-.02em;text-wrap:balance}
+#desc{margin:0;font-size:16px;line-height:1.35;color:#C9C9C9;text-wrap:pretty;max-width:60ch}
+.dots{display:flex;gap:4px}
+.dots button{flex:1 1 0;height:14px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center}
+.dots button::before{content:"";display:block;width:100%;height:3px;border-radius:2px;background:#2E2E2E}
+.dots button.done::before{background:var(--cyan)}
+.dots button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.row{display:flex;gap:10px;align-items:center}
+.btn{height:48px;border-radius:999px;font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
+.btn:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.btn.ghost{padding:0 20px;background:#151515;border:1px solid #5E5E5E;color:var(--fg)}
+.btn.ghost:disabled{opacity:.35;cursor:default}
+.btn.primary{flex:1 1 auto;padding:0 20px;background:var(--orange);border:0;color:#000}
+.btn.primary:hover{background:#FF9440}
+.btn.link{flex:1 1 auto;background:var(--blue);color:#fff;border:0}
+.hint{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:#7C7C7C}
+.rail{position:fixed;z-index:6;right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px}
+.rail button{display:flex;gap:10px;align-items:center;justify-content:flex-end;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:#8A8A8A;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;text-align:right}
+.rail button .n{font-family:var(--mono);font-weight:400;font-size:11px}
+.rail button[aria-current="step"]{color:#fff;background:var(--panel);border-color:var(--line)}
+.rail button[aria-current="step"] .n{color:var(--cyan)}
+.rail button:hover{color:#fff}
+.rail button:focus-visible{outline:2px solid var(--cyan)}
+@media (max-width:899px){.rail{display:none}}
+#labels{position:fixed;inset:0;pointer-events:none;z-index:4}
+.tag{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%);white-space:nowrap;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--cyan);background:rgba(0,0,0,.72);border:1px solid rgba(1,207,254,.55);border-radius:999px;padding:6px 10px;cursor:default;transition:opacity .25s}
+.tag.go{cursor:pointer;background:var(--cyan);color:#000;border-color:var(--cyan)}
+.tag.city,.tag.warm{color:#FFD9A3;border-color:rgba(255,217,163,.5)}
+.tag.small{font-size:10px;padding:4px 8px;color:#BFEFFF;border-color:rgba(191,239,255,.35)}
+.tag::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:14px;background:currentColor;opacity:.7}
+.tag.go::after{background:var(--cyan)}
+.tag[hidden]{display:none}
+.fallback{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted);font-size:16px}
+@media (prefers-reduced-motion:reduce){.tag{transition:none}}
+</style>
+
+</head>
+<body>
+<div id="stage"><canvas id="c" tabindex="0" aria-label="3D view of the Twistflower missile site. Drag to look around; use the Next and Back buttons to move between stations."></canvas></div>
+<div id="labels" aria-hidden="false"></div>
+
+<header class="top">
+  <span aria-label="ATOMIKA"><svg aria-hidden="true" focusable="false" width="153" height="24" viewBox="0 0 153 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M152.44 4.22C152.74 4.22 152.99 4.46 152.99 4.77V7.56C152.99 7.87 152.74 8.11 152.44 8.11H140.86C140.41 8.11 140.15 7.60 140.41 7.24L141.03 6.39C141.3 6.02 141.03 5.51 140.58 5.51H128.33C128.03 5.51 127.78 5.76 127.78 6.06V7.56C127.78 7.86 127.54 8.11 127.23 8.11H110.33C110.16 8.11 110.01 8.03 109.90 7.91L108.08 5.71C107.98 5.58 107.82 5.51 107.66 5.51H103.21C102.90 5.51 102.65 5.76 102.65 6.06V7.56C102.65 7.86 102.41 8.11 102.10 8.11H94.20C93.89 8.11 93.65 7.86 93.65 7.56V6.06C93.65 5.76 93.40 5.51 93.09 5.51H92.00C91.70 5.51 91.45 5.76 91.45 6.06V7.56C91.45 7.86 91.20 8.11 90.90 8.11H80.27C79.78 8.11 79.53 7.51 79.88 7.17L80.60 6.45C80.95 6.11 80.70 5.51 80.21 5.51H76.93C76.44 5.51 76.19 6.11 76.54 6.45L77.26 7.17C77.60 7.52 77.36 8.11 76.87 8.11H65.93C65.63 8.11 65.38 7.87 65.38 7.56V6.07C65.38 5.76 65.14 5.52 64.83 5.52H63.24C62.83 5.52 62.57 5.95 62.75 6.32C62.91 6.66 63.06 7.01 63.20 7.37C63.33 7.73 63.06 8.11 62.67 8.11H41.25C40.87 8.11 40.60 7.73 40.73 7.37C40.86 7.01 41.01 6.66 41.18 6.32C41.36 5.95 41.10 5.52 40.69 5.52C40.38 5.52 40.14 5.76 40.14 6.07V7.56C40.14 7.87 39.89 8.11 39.58 8.11H20.03C19.73 8.11 19.48 7.87 19.48 7.56V6.07C19.48 5.76 19.23 5.52 18.93 5.52H12.43C11.98 5.52 11.71 6.03 11.98 6.39L12.60 7.24C12.86 7.60 12.60 8.11 12.15 8.11H0.55C0.24 8.11 0 7.87 0 7.56V4.77C0 4.47 0.24 4.22 0.55 4.22H152.44V4.22ZM0.55 9.41C0.24 9.41 0 9.66 0 9.96V12.76C0 13.06 0.24 13.31 0.55 13.31H15.93C16.38 13.31 16.65 12.79 16.38 12.43L15.76 11.58C15.50 11.22 15.76 10.71 16.21 10.71H24.74C25.05 10.71 25.29 10.95 25.29 11.26V12.75C25.29 13.06 25.54 13.30 25.85 13.30H33.78C34.08 13.30 34.33 13.06 34.33 12.75V11.26C34.33 10.95 34.58 10.71 34.88 10.71H39.40C39.72 10.71 39.97 10.97 39.95 11.28C39.94 11.52 39.94 11.75 39.94 12C39.94 12.26 39.94 12.52 39.96 12.78C39.97 13.07 40.21 13.31 40.51 13.31H49.00C49.34 13.31 49.61 12.99 49.54 12.66C49.50 12.45 49.47 12.23 49.47 12C49.47 11.67 49.52 11.36 49.61 11.08C49.68 10.85 49.90 10.71 50.13 10.71H53.80C54.04 10.71 54.25 10.86 54.32 11.08C54.41 11.36 54.46 11.67 54.46 12C54.46 12.23 54.44 12.45 54.40 12.66C54.32 12.99 54.59 13.31 54.94 13.31H63.43C63.72 13.31 63.96 13.07 63.98 12.78C63.99 12.52 64.00 12.26 64.00 12C64.00 11.75 63.99 11.52 63.98 11.28C63.97 10.97 64.22 10.71 64.53 10.71H64.83C65.13 10.71 65.38 10.95 65.38 11.26V12.75C65.38 13.06 65.63 13.30 65.93 13.30H90.90C91.21 13.30 91.45 13.06 91.45 12.75V11.26C91.45 10.95 91.70 10.71 92.01 10.71H93.10C93.40 10.71 93.65 10.95 93.65 11.26V12.75C93.65 13.06 93.90 13.30 94.20 13.30H102.11C102.41 13.30 102.66 13.06 102.66 12.75V11.26C102.66 10.95 102.91 10.71 103.21 10.71H111.59C112.04 10.71 112.30 11.22 112.04 11.58L111.42 12.43C111.15 12.79 111.41 13.30 111.87 13.30H127.25C127.55 13.30 127.80 13.06 127.80 12.75V11.26C127.80 10.95 128.04 10.71 128.35 10.71H136.81C137.26 10.71 137.52 11.22 137.26 11.58L136.64 12.43C136.37 12.79 136.64 13.31 137.09 13.31H152.44C152.75 13.31 153 13.06 153 12.76V9.96C153 9.66 152.75 9.41 152.44 9.41H0.55ZM127.78 2.36V0.84C127.78 0.53 127.53 0.29 127.23 0.29H119.32C119.02 0.29 118.77 0.53 118.77 0.84V2.36C118.77 2.67 119.02 2.91 119.32 2.91H127.23C127.54 2.91 127.78 2.67 127.78 2.36ZM152.44 14.61H0.55C0.24 14.61 0 14.85 0 15.16V17.95C0 18.25 0.24 18.50 0.55 18.50H19.71C20.16 18.50 20.43 17.99 20.16 17.63L19.54 16.78C19.28 16.41 19.54 15.90 19.99 15.90H24.74C25.04 15.90 25.29 16.15 25.29 16.45V17.95C25.29 18.25 25.54 18.50 25.84 18.50H33.78C34.08 18.50 34.33 18.25 34.33 17.95V16.45C34.33 16.15 34.58 15.90 34.88 15.90H40.09C40.33 15.90 40.54 16.06 40.61 16.29C40.84 16.97 41.13 17.61 41.47 18.22C41.56 18.39 41.75 18.50 41.95 18.50H61.98C62.18 18.50 62.36 18.40 62.46 18.22C62.80 17.61 63.09 16.97 63.32 16.29C63.39 16.06 63.60 15.90 63.84 15.90H64.82C65.12 15.90 65.37 16.15 65.37 16.45V17.95C65.37 18.25 65.61 18.50 65.92 18.50H73.94C74.24 18.50 74.49 18.25 74.49 17.95V16.45C74.49 16.15 74.73 15.90 75.04 15.90H75.59C75.74 15.90 75.88 15.96 75.99 16.07L78.03 18.13C78.24 18.34 78.6 18.34 78.81 18.13L80.88 16.06C80.99 15.96 81.13 15.90 81.27 15.90H81.86C82.16 15.90 82.41 16.15 82.41 16.45V17.94C82.41 18.25 82.66 18.49 82.96 18.49H90.90C91.20 18.49 91.45 18.25 91.45 17.94V16.45C91.45 16.15 91.70 15.90 92.00 15.90H93.09C93.40 15.90 93.65 16.15 93.65 16.45V17.94C93.65 18.25 93.89 18.49 94.20 18.49H102.10C102.41 18.49 102.65 18.25 102.65 17.94V16.45C102.65 16.15 102.90 15.90 103.21 15.90H107.79C108.24 15.90 108.50 16.41 108.24 16.77L107.62 17.62C107.35 17.98 107.61 18.49 108.06 18.49H127.24C127.55 18.49 127.8 18.25 127.8 17.94V16.45C127.8 16.15 128.04 15.90 128.35 15.90H133.01C133.46 15.90 133.73 16.41 133.46 16.77L132.84 17.62C132.58 17.99 132.84 18.50 133.29 18.50H152.43C152.74 18.50 152.98 18.25 152.98 17.95V15.15C152.98 14.85 152.74 14.60 152.43 14.60L152.44 14.61ZM152.99 2.37V0.84C152.99 0.54 152.74 0.29 152.44 0.29H145.75C145.58 0.29 145.41 0.37 145.31 0.52L144.2 2.04C143.93 2.41 144.19 2.92 144.64 2.92H152.44C152.74 2.92 152.99 2.67 152.99 2.37ZM115.94 2.04L114.83 0.52C114.72 0.37 114.56 0.29 114.38 0.29H104.77C104.30 0.29 104.04 0.83 104.34 1.19L105.61 2.72C105.71 2.85 105.87 2.92 106.03 2.92H115.5C115.95 2.92 116.21 2.41 115.94 2.04ZM0.55 19.80C0.24 19.80 0 20.05 0 20.35V23.15C0 23.46 0.24 23.70 0.55 23.70H8.51C8.82 23.70 9.06 23.46 9.06 23.15V21.65C9.06 21.35 9.31 21.10 9.61 21.10H11.12C11.30 21.10 11.47 21.19 11.58 21.34L13.01 23.46C13.11 23.61 13.28 23.70 13.47 23.70H23.51C23.96 23.70 24.22 23.19 23.95 22.83L23.33 21.97C23.06 21.61 23.33 21.10 23.78 21.10H24.74C25.05 21.10 25.29 21.35 25.29 21.65V23.15C25.29 23.46 25.54 23.70 25.85 23.70H33.78C34.08 23.70 34.33 23.46 34.33 23.15V21.65C34.33 21.35 34.58 21.10 34.88 21.10H43.58C43.71 21.10 43.83 21.15 43.93 21.23C46.00 22.99 48.77 24 51.97 24C55.17 24 57.93 22.99 60.00 21.23C60.10 21.15 60.22 21.10 60.36 21.10H64.81C65.12 21.10 65.37 21.35 65.37 21.65V23.15C65.37 23.45 65.61 23.70 65.92 23.70H73.94C74.24 23.70 74.49 23.45 74.49 23.15V21.65C74.49 21.34 74.74 21.10 75.04 21.10H81.86C82.17 21.10 82.41 21.34 82.41 21.65V23.15C82.41 23.45 82.66 23.70 82.97 23.70H90.90C91.20 23.70 91.45 23.45 91.45 23.15V21.65C91.45 21.34 91.70 21.10 92.00 21.10H93.10C93.40 21.10 93.65 21.34 93.65 21.65V23.15C93.65 23.45 93.90 23.70 94.20 23.70H102.11C102.41 23.70 102.66 23.45 102.66 23.15V21.65C102.66 21.34 102.90 21.10 103.21 21.10H104.00C104.45 21.10 104.71 21.61 104.45 21.97L103.82 22.83C103.56 23.19 103.82 23.70 104.27 23.70H114.34C114.52 23.70 114.69 23.61 114.8 23.46L116.22 21.34C116.32 21.19 116.50 21.10 116.68 21.10H118.19C118.49 21.10 118.74 21.34 118.74 21.65V23.15C118.74 23.45 118.99 23.70 119.29 23.70H127.25C127.56 23.70 127.80 23.45 127.80 23.15V21.65C127.80 21.35 128.05 21.10 128.36 21.10H129.23C129.68 21.10 129.95 21.61 129.68 21.97L129.06 22.83C128.79 23.19 129.06 23.70 129.51 23.70H139.55C139.73 23.70 139.90 23.61 140.00 23.46L141.43 21.34C141.53 21.19 141.71 21.10 141.89 21.10H143.40C143.70 21.10 143.95 21.35 143.95 21.65V23.15C143.95 23.46 144.2 23.70 144.50 23.70H152.44C152.74 23.70 152.99 23.46 152.99 23.15V20.35C152.99 20.05 152.74 19.80 152.44 19.80H0.55ZM40.14 2.37V0.84C40.14 0.54 39.89 0.29 39.59 0.29H20.04C19.73 0.29 19.48 0.54 19.48 0.84V2.37C19.48 2.67 19.73 2.92 20.04 2.92H39.59C39.89 2.92 40.14 2.67 40.14 2.37ZM102.66 2.37V0.84C102.66 0.54 102.41 0.29 102.11 0.29H94.20C93.90 0.29 93.65 0.54 93.65 0.84V2.37C93.65 2.67 93.90 2.92 94.20 2.92H102.11C102.41 2.92 102.66 2.67 102.66 2.37ZM8.82 2.04L7.70 0.52C7.60 0.37 7.43 0.29 7.26 0.29H0.55C0.24 0.29 0 0.53 0 0.84V2.37C0 2.67 0.24 2.92 0.55 2.92H8.37C8.82 2.92 9.08 2.41 8.82 2.04ZM58.54 2.92C59.09 2.92 59.30 2.20 58.84 1.90C56.94 0.68 54.60 0 51.97 0C49.33 0 46.99 0.68 45.10 1.90C44.63 2.20 44.85 2.92 45.40 2.92H58.54H58.54ZM72.07 1.98L70.54 0.45C70.44 0.35 70.30 0.29 70.15 0.29H65.94C65.64 0.29 65.39 0.54 65.39 0.84V2.37C65.39 2.67 65.64 2.92 65.94 2.92H71.68C72.17 2.92 72.42 2.33 72.07 1.98ZM91.45 2.37V0.84C91.45 0.54 91.20 0.29 90.90 0.29H87.02C86.87 0.29 86.73 0.35 86.63 0.45L85.09 1.98C84.74 2.33 84.99 2.92 85.48 2.92H90.90C91.20 2.92 91.45 2.67 91.45 2.37Z" fill="white"/> </svg></span>
+  <div class="readout"><span>PROTOTYPE</span><span id="depth">ALT 22,000 FT</span></div>
+</header>
+
+<nav class="rail" id="rail" aria-label="Stations"></nav>
+
+<section class="card" aria-live="polite">
+  <div class="eyebrow" id="eyebrow">Station 01 / 10</div>
+  <h1 id="title">A Signal in the Desert</h1>
+  <p id="desc">High desert, about 3,600 feet up. North of town, something is transmitting.</p>
+  <div class="dots" id="dots" role="group" aria-label="Jump to a station"></div>
+  <div class="row">
+    <button class="btn ghost" id="prev" type="button">Back</button>
+    <button class="btn primary" id="next" type="button">Begin Descent</button>
+    <a class="btn link" id="cta" href="https://atomikafest.com" hidden>Visit ATOMIKA</a>
+  </div>
+  <div class="hint" id="hint">DRAG TO LOOK AROUND · ARROW KEYS TO MOVE</div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+if (!window.THREE) { document.body.insertAdjacentHTML('beforeend','<div class="fallback">The 3D view could not load. Check your connection and reload.</div>'); return; }
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canvas = document.getElementById('c');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas, antialias:true, logarithmicDepthBuffer:true}); }
+catch(e){ document.body.insertAdjacentHTML('beforeend','<div class="fallback">This device could not start the 3D view.</div>'); return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 1.75));
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#04060b');
+scene.fog = new THREE.FogExp2('#0a0e16', 0.0000125);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.3, 700000);
+
+scene.add(new THREE.HemisphereLight('#8090b4', '#1c1b18', 0.55));
+const moon = new THREE.DirectionalLight('#d8e0ff', 0.6); moon.position.set(-0.6, 1, 0.35); scene.add(moon);
+
+/* ---------- helpers ---------- */
+const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:1, metalness:0, flatShading:true}, o||{}));
+const D = (c, o) => M(c, Object.assign({side:THREE.DoubleSide}, o||{}));
+const G = (c, o) => new THREE.MeshBasicMaterial(Object.assign({color:c}, o||{}));
+const HIDE = new THREE.MeshBasicMaterial({visible:false});
+function add(geo, mat, x, y, z, parent){ const m = new THREE.Mesh(geo, mat); m.position.set(x||0, y||0, z||0); (parent||scene).add(m); return m; }
+function box(w,h,d,mat,x,y,z,ry){ const m = add(new THREE.BoxGeometry(w,h,d), mat, x,y,z); if (ry) m.rotation.y = ry; return m; }
+const smooth = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
+function rectPath(x0,z0,x1,z1){ const p = new THREE.Path(); p.moveTo(x0,-z0); p.lineTo(x1,-z0); p.lineTo(x1,-z1); p.lineTo(x0,-z1); p.lineTo(x0,-z0); return p; }
+/* Shapes are drawn in (x, -z) and laid flat with rotateX(-PI/2). */
+
+/* ---------- terrain ---------- */
+const CX = 16100, CZ = 74800; /* Roswell, relative to the site, in feet (south is +z) */
+function H(x,z){
+  const r = Math.hypot(x,z);
+  const k = smooth(3000, 60000, r);
+  const city = 1 - 0.85*smooth(26000, 0, Math.hypot(x-CX, z-CZ));
+  let h = (Math.sin(x*0.00011) + Math.cos(z*0.00009) + 0.6*Math.sin((x-z)*0.00027) + 0.4*Math.cos((x+2*z)*0.0006)) * 520 * k * city;
+  if (x < -45000) h += smooth(45000, 140000, -x) * 5200 * (0.55 + 0.45*Math.sin(z*0.00004 + 1.3));
+  return h - 0.4;
+}
+const groundShape = new THREE.Shape(); groundShape.absarc(0,0,1600,0,Math.PI*2,false);
+const capHole = new THREE.Path(); capHole.absarc(0,0,35,0,Math.PI*2,true); groundShape.holes.push(capHole);
+groundShape.holes.push(rectPath(-16,-125,3,-119));
+const gGeo = new THREE.ShapeGeometry(groundShape, 48); gGeo.rotateX(-Math.PI/2);
+add(gGeo, M('#3b3a37'));
+let ring = new THREE.RingGeometry(1500, 240000, 140, 50); ring.rotateX(-Math.PI/2);
+{ const p = ring.attributes.position; for (let i=0;i<p.count;i++){ p.setY(i, H(p.getX(i), p.getZ(i))); } ring.computeVertexNormals(); }
+add(ring, M('#3b3a37'));
+
+/* stars */
+{ const n = 1800, pos = new Float32Array(n*3);
+  for (let i=0;i<n;i++){ const u = Math.random()*Math.PI*2, v = Math.random()*0.95; const R = 450000;
+    pos[i*3] = R*Math.cos(u)*Math.cos(v*Math.PI/2); pos[i*3+1] = R*Math.sin(v*Math.PI/2)+6000; pos[i*3+2] = R*Math.sin(u)*Math.cos(v*Math.PI/2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:'#ffffff', size:1.5, sizeAttenuation:false, fog:false, transparent:true, opacity:.8}))); }
+
+/* Roswell city lights and highway */
+{ const pts = [], cols = []; const pal = ['#ffb46b','#ffd9a3','#fff2db','#ffc98a','#9fe6ff'].map(c => new THREE.Color(c));
+  for (let gx=-42; gx<=42; gx++) for (let gz=-42; gz<=42; gz++){
+    const x = gx*330, z = gz*330, d = Math.hypot(x, z/1.25);
+    if (d > 13500) continue;
+    const pr = Math.exp(-Math.pow(d/7000,2))*0.9 + 0.08;
+    if (Math.random() > pr) continue;
+    const n = 1 + (Math.random()*2|0);
+    for (let k=0;k<n;k++){ const px = CX + x + (Math.random()-.5)*140, pz = CZ + z + (Math.random()-.5)*140;
+      pts.push(px, H(px,pz)+25, pz); const c = pal[Math.random()<0.06 ? 4 : (Math.random()*4|0)]; cols.push(c.r,c.g,c.b); }
+  }
+  for (let i=0;i<120;i++){ const t = i/120; const px = CX - 1500 + t*(-9000 - (CX-1500)), pz = CZ - 13000 + t*(-30000 - (CZ-13000));
+    if (Math.random()<0.55){ pts.push(px, H(px,pz)+20, pz); cols.push(1,0.75,0.45); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({size:2.4, sizeAttenuation:false, vertexColors:true, transparent:true, opacity:.95, depthWrite:false}))); }
+
+/* Twistflower Rd */
+box(610, 0.3, 16, M('#2a2a29'), 295, 0.12, -78);
+{ const L = 22000, a = Math.atan2(0.37, 0.93); const m = box(L, 0.3, 18, M('#2a2a29'), 600 + 0.93*L/2, 0.12, -78 - 0.37*L/2); m.rotation.y = a; }
+
+const FEST = [[0,607,190],[-607,607,120],[607,607,60],[-431,176,125],[431,176,125],[-431,1043,125],[431,1043,125],[0,1221,125]];
+/* shrubs */
+{ const geo = new THREE.IcosahedronGeometry(1, 0); const inst = new THREE.InstancedMesh(geo, M('#27302a'), 520); const o = new THREE.Object3D(); let n = 0;
+  while (n < 520){ const a = Math.random()*Math.PI*2, r = 60 + Math.random()*1550; const x = -20 + Math.cos(a)*r, z = -40 + Math.sin(a)*r;
+    if (Math.hypot(x,z) < 70) continue; if (FEST.some(f => Math.hypot(x-f[0], z-f[1]) < f[2])) continue; if (x>-85 && x<15 && z>-150 && z<-55) continue; if (z>-92 && z<-64 && x>-20) continue;
+    const s = 2 + Math.random()*3.5; o.position.set(x, s*0.3, z); o.scale.set(s, s*(0.55+Math.random()*0.3), s); o.rotation.y = Math.random()*6; o.updateMatrix(); inst.setMatrixAt(n++, o.matrix); }
+  scene.add(inst); }
+
+/* fences */
+{ const v = []; const sq = (cx,cz,hw,hd,h,step) => {
+    const c = [[cx-hw,cz-hd],[cx+hw,cz-hd],[cx+hw,cz+hd],[cx-hw,cz+hd],[cx-hw,cz-hd]];
+    for (let i=0;i<4;i++){ const [x0,z0]=c[i],[x1,z1]=c[i+1]; v.push(x0,h,z0,x1,h,z1); const L=Math.hypot(x1-x0,z1-z0), n=Math.ceil(L/step);
+      for (let k=0;k<n;k++){ const t=k/n; const x=x0+(x1-x0)*t, z=z0+(z1-z0)*t; v.push(x,0,z,x,h,z); } } };
+  sq(-20,-40,240,240,7,20); sq(-38,-112,34,30,6,10);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(v,3));
+  scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({color:'#6e6e6c'}))); }
+
+/* ---------- surface features ---------- */
+/* silo cap with door opening */
+{ const s = new THREE.Shape(); s.absarc(0,0,35,0,Math.PI*2,false); s.holes.push(rectPath(-16.5,-11,16.5,11));
+  const g = new THREE.ExtrudeGeometry(s, {depth:3.5, bevelEnabled:false, curveSegments:48}); g.rotateX(-Math.PI/2); g.translate(0,-2,0); add(g, M('#6c6c69')); }
+box(34,0.5,1.2, M('#4a4a48'), 0,1.75,-11.6); box(34,0.5,1.2, M('#4a4a48'), 0,1.75,11.6);
+/* propped-open door leaves */
+[-1,1].forEach(side => { const piv = new THREE.Group(); piv.position.set(side*16.5, 1.5, 0); scene.add(piv);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(16.5,2.5,22), M('#8c8c89')); leaf.position.set(-side*8.25, 1.25, 0); piv.add(leaf);
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(14,0.15,1), G('#FF7E1D')); strip.position.set(-side*8.25, 2.55, 0); piv.add(strip);
+  piv.rotation.z = -side*1.86; });
+/* west pad, north vent, hatch, antenna silo */
+box(30,0.9,34, M('#5d5c59'), -50,0.45,0); box(0.4,0.1,34, M('#2c2c2b'), -50,0.95,0); box(30,0.1,0.4, M('#2c2c2b'), -50,0.95,0);
+box(9,1,7, M('#5d5c59'), 6,0.5,-50); box(2,0.1,3, M('#151515'), 4,1.02,-50); box(2,0.1,3, M('#151515'), 8,1.02,-50);
+add(new THREE.CylinderGeometry(2.8,2.8,1.2,12), M('#7a7a77'), -45,0.6,-95);
+add(new THREE.CylinderGeometry(4,4,0.8,14), M('#6a6a67'), -63,0.4,-130);
+/* entry bulkhead (pink-topped on the real site) */
+{ const s = new THREE.Shape(); s.moveTo(3,0); s.lineTo(-17,0); s.lineTo(-4,10); s.lineTo(3,10); s.lineTo(3,0);
+  const g = new THREE.ExtrudeGeometry(s, {depth:6, bevelEnabled:false}); g.translate(0,0,-125); add(g, M('#b9979d')); }
+box(0.4,0.6,4.6, G('#01CFFE'), 3.25,7.7,-122);
+box(0.5,7.4,0.5, M('#3a3a3a'), 3.2,3.7,-124.3); box(0.5,7.4,0.5, M('#3a3a3a'), 3.2,3.7,-119.7);
+
+/* ---------- stairs and entrapment ---------- */
+box(8,0.4,5, M('#4a4a48'), -1,-0.2,-122);
+{ const stepG = new THREE.BoxGeometry(32/28+0.06, 0.75, 5), sm = M('#5a5a57');
+  for (let i=0;i<28;i++){ const x = -5 - (i+0.5)*32/28, y = -(i+1)*21/28 + 0.375; add(stepG, sm, x, y-0.75, -122); } }
+{ const T = new THREE.Vector3(-4,4.3,-122), B = new THREE.Vector3(-37,-17.4,-122); const L = T.distanceTo(B), wall = D('#3d3d3b');
+  const m = add(new THREE.BoxGeometry(L,9,5.6), [HIDE,HIDE,wall,wall,wall,wall], (T.x+B.x)/2, (T.y+B.y)/2, -122);
+  m.rotation.z = Math.atan2(T.y-B.y, T.x-B.x); }
+{ const w = D('#444442'); add(new THREE.BoxGeometry(10,9,6), [HIDE,w,w,w,HIDE,w], -42,-16.5,-122); }
+{ const w = D('#444442'); add(new THREE.BoxGeometry(5,8,5.5), [w,w,w,w,HIDE,HIDE], -45,-17,-116.25); }
+box(4,7,0.5, M('#7d7d7a'), -39.6,-17.5,-124.5);
+box(6,0.8,0.8, M('#6b6b69'), -45,-12.6,-119); box(0.8,8,0.8, M('#6b6b69'), -47.9,-17,-119); box(0.8,8,0.8, M('#6b6b69'), -42.1,-17,-119);
+box(0.6,7.5,4.4, M('#8a8a87'), -46.6,-17,-121.5); box(0.1,0.4,3, G('#FF7E1D'), -46.25,-14.5,-121.5);
+{ const l = new THREE.PointLight('#cfeeff', 0.9, 20, 1.5); l.position.set(-42,-13.5,-122); scene.add(l); }
+{ const l = new THREE.PointLight('#ffffff', 0.55, 30, 1.5); l.position.set(-20,-3,-122); scene.add(l); }
+
+/* ---------- launch control center ---------- */
+const C = new THREE.Vector3(-45,0,-95);
+const TUN = Math.atan2(0.428, 0.904); /* direction from LCC to silo, in cylinder theta */
+function wallBand(r, y0, y1, gapAt, gapW, mat){
+  const g = gapW ? new THREE.CylinderGeometry(r,r,y1-y0,48,1,true, gapAt+gapW, Math.PI*2-2*gapW) : new THREE.CylinderGeometry(r,r,y1-y0,48,1,true);
+  return add(g, mat, C.x, (y0+y1)/2, C.z); }
+const lccWall = D('#3a3a38');
+wallBand(20,-13,-9,0,0,lccWall); wallBand(20,-21,-13,Math.PI,0.16,lccWall);
+wallBand(20,-26,-21,0,0,lccWall); wallBand(20,-34,-26,TUN,0.22,lccWall);
+{ const g = new THREE.SphereGeometry(20,32,8,0,Math.PI*2,0,Math.PI/2); const m = add(g, D('#2f2f2d'), C.x,-9,C.z); m.scale.y = 0.22; }
+{ const s = new THREE.Shape(); s.absarc(C.x,-C.z,19.8,0,Math.PI*2,false); s.holes.push(rectPath(-57,-97,-51,-89));
+  const g = new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false,curveSegments:40}); g.rotateX(-Math.PI/2); g.translate(0,-22,0); add(g, D('#4f4f4c')); }
+{ const g = new THREE.CircleGeometry(19.8,40); g.rotateX(-Math.PI/2); add(g, D('#4a4a47'), C.x,-34,C.z); }
+for (let i=0;i<8;i++){ const a = i*Math.PI/4 + Math.PI/8; box(0.6,25,0.6, M('#5a5a57'), C.x+18.6*Math.sin(a), -21.5, C.z+18.6*Math.cos(a)); }
+for (let i=0;i<4;i++){ const a = Math.PI/4 + i*Math.PI/2, x = C.x+15*Math.sin(a), z = C.z+15*Math.cos(a);
+  add(new THREE.CylinderGeometry(0.25,0.25,12,8), M('#8a8a87'), x,-15,z); add(new THREE.CylinderGeometry(1,1,4.5,10), M('#9a9a96'), x,-12.6,z); }
+/* upper level: bunks, galley, table */
+[-103,-86].forEach(z => { box(3.2,0.5,7, M('#6a6a67'), -61,-19.6,z); box(3.2,0.5,7, M('#6a6a67'), -61,-16.8,z); box(3.4,0.3,7.2, M('#2e4a5c'), -61,-16.4,z); });
+box(2.6,3,8, M('#6f6f6c'), -29.8,-19.5,-104); box(2.8,0.2,8.2, M('#a3a3a0'), -29.8,-17.9,-104);
+box(5,0.3,3, M('#7a7a77'), -40,-18.3,-91);
+for (let i=0;i<13;i++) box(5,0.25,0.9, M('#6a6a67'), -54, -21.6-i*0.95, -96.6+i*0.7);
+{ const l = new THREE.PointLight('#ffd1a1', 1.25, 42, 1.4); l.position.set(-45,-11.5,-95); scene.add(l); }
+/* lower level: launch control panels, console, racks */
+{ const pal = ['#01CFFE','#FF7E1D','#FF0000','#FFEEA9','#01CFFE','#34D9FD'];
+  for (let i=0;i<7;i++){ const a = 3.6 + i*0.27; const x = C.x+17*Math.sin(a), z = C.z+17*Math.cos(a);
+    const g = new THREE.Group(); g.position.set(x,-30.5,z); g.rotation.y = a + Math.PI; scene.add(g);
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(4.4,7,2), M('#4b4b49')); g.add(cab);
+    for (let k=0;k<6;k++){ const li = new THREE.Mesh(new THREE.BoxGeometry(0.55,0.35,0.1), G(pal[(i+k)%pal.length])); li.position.set(-1.2+(k%3)*1.2, 1.8-(k>2?1:0)*0.9, 1.05); g.add(li); }
+    const sc = new THREE.Mesh(new THREE.BoxGeometry(3,1.4,0.1), G('#0b2a33')); sc.position.set(0,-0.4,1.05); g.add(sc); }
+  const a = 4.36, cg = new THREE.Group(); cg.position.set(C.x+10.5*Math.sin(a), -32.6, C.z+10.5*Math.cos(a)); cg.rotation.y = a + Math.PI; scene.add(cg);
+  cg.add(new THREE.Mesh(new THREE.BoxGeometry(9,2.8,3), M('#7c7c79'))); const strip = new THREE.Mesh(new THREE.BoxGeometry(8,0.12,0.3), G('#01CFFE')); strip.position.set(0,1.45,1.2); cg.add(strip);
+  for (let i=0;i<3;i++){ const b = 1.7 + i*0.32; box(3,8,2, M('#424240'), C.x+17.5*Math.sin(b), -30, C.z+17.5*Math.cos(b), b); } }
+{ const l = new THREE.PointLight('#9fdcff', 1.25, 40, 1.4); l.position.set(-45,-24,-95); scene.add(l); }
+
+/* ---------- tunnel ---------- */
+const TA = new THREE.Vector3(-36.4,-30,-76.9), TB = new THREE.Vector3(-11.1,-30,-23.5);
+const tdir = TB.clone().sub(TA).normalize(), tlen = TA.distanceTo(TB);
+{ const g = new THREE.CylinderGeometry(4,4,tlen+2,18,1,true); const m = add(g, D('#3e4448'), (TA.x+TB.x)/2, -30, (TA.z+TB.z)/2);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tdir);
+  const rg = new THREE.TorusGeometry(4,0.18,4,18), rm = M('#5c6267');
+  for (let i=1;i<15;i++){ const p = TA.clone().addScaledVector(tdir, tlen*i/15); const r = add(rg, rm, p.x, p.y, p.z); r.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), tdir); }
+  [0.15,0.5,0.85].forEach(f => { const p = TA.clone().addScaledVector(tdir, tlen*f); const r = add(new THREE.TorusGeometry(3.8,0.6,6,20), M('#757573'), p.x,p.y,p.z); r.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), tdir);
+    const s = add(new THREE.BoxGeometry(0.6,0.3,0.6), G('#FF7E1D'), p.x, -26.2, p.z); });
+  const fl = add(new THREE.BoxGeometry(3.4,0.2,tlen), M('#55595c'), (TA.x+TB.x)/2, -33.3, (TA.z+TB.z)/2); fl.rotation.y = Math.atan2(tdir.x, tdir.z);
+  [0.3,0.7].forEach(f => { const p = TA.clone().addScaledVector(tdir, tlen*f); const l = new THREE.PointLight('#7fe3ff', 0.9, 26, 1.5); l.position.set(p.x,-27,p.z); scene.add(l); }); }
+{ const P = TB.clone().addScaledVector(tdir, 3); box(7,0.4,7, M('#5f6367'), P.x,-34.2,P.z, Math.atan2(tdir.x,tdir.z)); }
+
+/* ---------- silo shaft ---------- */
+const SG = Math.atan2(-0.428,-0.904);
+function shaftBand(y0,y1,gap){ const g = gap ? new THREE.CylinderGeometry(26,26,y1-y0,48,1,true, SG+0.17, Math.PI*2-0.34) : new THREE.CylinderGeometry(26,26,y1-y0,48,1,true);
+  return add(g, D('#4b4b49'), 0,(y0+y1)/2,0); }
+shaftBand(-26,-2,false); shaftBand(-34,-26,true); shaftBand(-176,-34,false);
+{ const g = new THREE.CircleGeometry(26,48); g.rotateX(-Math.PI/2); add(g, D('#262626'), 0,-176,0); }
+for (let i=0;i<8;i++){ const g = new THREE.RingGeometry(23.6,26,48); g.rotateX(-Math.PI/2); add(g, D('#595957'), 0,-44-i*16.5,0); }
+add(new THREE.CylinderGeometry(4,5,2,16), G('#34D9FD'), 0,-175,0);
+add(new THREE.SphereGeometry(7,16,10), new THREE.MeshBasicMaterial({color:'#34D9FD', transparent:true, opacity:.35, blending:THREE.AdditiveBlending, depthWrite:false}), 0,-172,0);
+const shaftLight = new THREE.PointLight('#5fdcff', 2.4, 270, 1.3); shaftLight.position.set(0,-150,0); scene.add(shaftLight);
+const warmLight = new THREE.PointLight('#ff9a3a', 1.1, 130, 1.5); warmLight.position.set(0,-60,0); scene.add(warmLight);
+
+/* ---------- lasers ---------- */
+const beams = [];
+['#34D9FD','#057AD9','#FFEEA9','#FF8C01','#34D9FD','#FFEEA9'].forEach((c,i) => {
+  const grp = new THREE.Group(); grp.position.set(0,-174,0); scene.add(grp); const Hh = 64000;
+  const core = new THREE.CylinderGeometry(60,0.35,Hh,8,1,true); core.translate(0,Hh/2,0);
+  const halo = new THREE.CylinderGeometry(280,2.4,Hh,8,1,true); halo.translate(0,Hh/2,0);
+  const base = {transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, fog:false, side:THREE.DoubleSide};
+  grp.add(new THREE.Mesh(core, new THREE.MeshBasicMaterial(Object.assign({color:c, opacity:.85}, base))));
+  grp.add(new THREE.Mesh(halo, new THREE.MeshBasicMaterial(Object.assign({color:c, opacity:.11}, base))));
+  beams.push({grp, ph:i*1.7, ax:0.026+0.008*(i%3), az:0.022+0.007*(i%2), sp:0.16+0.05*i});
+});
+
+/* gooseneck vents beside the entry (seen in the LiDAR photo) and the LCC's central column */
+[[8,-114],[-22,-128]].forEach(([x,z]) => { add(new THREE.CylinderGeometry(0.5,0.5,4,8), M('#9a9a97'), x,2,z); const t = add(new THREE.TorusGeometry(1.4,0.5,6,12,Math.PI), M('#9a9a97'), x+1.4,4,z); add(new THREE.CylinderGeometry(0.5,0.5,2.5,8), M('#9a9a97'), x+2.8,2.75,z); });
+add(new THREE.CylinderGeometry(0.9,0.9,25,12), M('#6e6e6b'), C.x,-21.5,C.z);
+
+/* ---------- festival build (positions follow the published festival map; sizes approximate) ---------- */
+const flatRing = (r, w, color, x, z, op) => { const g = new THREE.RingGeometry(r-w/2, r+w/2, 72); g.rotateX(-Math.PI/2); return add(g, new THREE.MeshBasicMaterial({color, transparent:true, opacity:op||0.85, depthWrite:false}), x, 0.35, z); };
+function path(x0,z0,x1,z1){ const L = Math.hypot(x1-x0,z1-z0); const m = box(L,0.25,7, M('#46454a'), (x0+x1)/2,0.15,(z0+z1)/2); m.rotation.y = -Math.atan2(z1-z0, x1-x0); }
+const BC = [0,607];
+[[-607,607],[607,607],[-431,176],[431,176],[-431,1043],[431,1043],[0,1221],[0,40]].forEach(([x,z]) => path(BC[0],BC[1],x,z));
+path(431,176,640,-60);
+/* Base Camp: ring of food and vendor stalls around a gathering circle */
+flatRing(170, 3, '#0077D8', BC[0], BC[1]);
+for (let i=0;i<24;i++){ const a = i/24*Math.PI*2; const m = box(14,9,14, M('#d9d9d6'), BC[0]+150*Math.sin(a), 4.5, BC[1]+150*Math.cos(a)); m.rotation.y = a; }
+{ const g = new THREE.CircleGeometry(42,40); g.rotateX(-Math.PI/2); add(g, new THREE.MeshBasicMaterial({color:'#0a3f7a'}), BC[0],0.3,BC[1]); }
+flatRing(42, 2.5, '#ffffff', BC[0], BC[1], 0.7);
+add(new THREE.ConeGeometry(3,6,6), G('#FF8C01'), BC[0],3,BC[1]);
+{ const l = new THREE.PointLight('#ff9a3a', 1.2, 160, 1.6); l.position.set(BC[0],12,BC[1]); scene.add(l); }
+/* Twistflower Stage: arch and two crescent trusses, facing Base Camp */
+{ const sx = -607, sz = 607; const g = new THREE.Group(); g.position.set(sx,0,sz); scene.add(g);
+  const arch = new THREE.Mesh(new THREE.TorusGeometry(34,2,6,28,Math.PI), M('#cfcfcc')); arch.rotation.y = Math.PI/2; arch.position.y = 6; g.add(arch);
+  for (let i=1;i<12;i++){ const a = i/12*Math.PI; const s = new THREE.Mesh(new THREE.SphereGeometry(1.4,8,6), G('#34D9FD')); s.position.set(0, 6+34*Math.sin(a), 34*Math.cos(a)); g.add(s); }
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(34,6,60), M('#5e5e5b')); deck.position.set(-4,3,0); g.add(deck);
+  const booth = new THREE.Mesh(new THREE.BoxGeometry(6,4,12), M('#8a8a87')); booth.position.set(6,8,0); g.add(booth);
+  [[0.45,1.25],[-1.25,-0.45]].forEach(([a0,a1]) => { const b = new THREE.Mesh(new THREE.CylinderGeometry(80,80,5,24,1,true, Math.PI/2+a0, a1-a0), D('#bdbdba')); b.position.y = 16; g.add(b);
+    for (let k=0;k<=4;k++){ const a = Math.PI/2 + a0 + (a1-a0)*k/4; const p = new THREE.Mesh(new THREE.BoxGeometry(1.6,14,1.6), M('#9a9a97')); p.position.set(80*Math.sin(a), 7, 80*Math.cos(a)); g.add(p); } });
+  const l = new THREE.PointLight('#5fdcff', 1.4, 220, 1.6); l.position.set(30,30,0); g.add(l); }
+/* Stardome: 70-foot geodesic dome */
+{ const geo = new THREE.SphereGeometry(35,14,7,0,Math.PI*2,0,Math.PI/2); const dome = add(geo, M('#e6e6e3', {emissive:'#16264a', emissiveIntensity:0.9}), 607,0,607);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color:'#7fdcff', transparent:true, opacity:0.55})); edges.position.copy(dome.position); scene.add(edges);
+  box(2,13,12, M('#151515'), 573.5,6.5,607); }
+/* camps: tents, RVs and shift pods around a center, 200 people each */
+const tentG = new THREE.ConeGeometry(7,8,4), rvG = new THREE.BoxGeometry(9,10,32), podG = new THREE.SphereGeometry(4,8,5,0,Math.PI*2,0,Math.PI/2);
+const tentM = M('#c4542c'), rvM = M('#d2d2cf'), podM = M('#e8e8e5', {emissive:'#2a3346', emissiveIntensity:0.6});
+function camp(cx, cz){
+  flatRing(118, 2.5, '#0077D8', cx, cz);
+  for (let i=0;i<12;i++){ const a = i/12*Math.PI*2 + 0.13; const x = cx+96*Math.sin(a), z = cz+96*Math.cos(a);
+    if (i%2){ const m = add(rvG, rvM, x,5,z); m.rotation.y = a + Math.PI/2; } else { const m = add(tentG, tentM, x,4,z); m.rotation.y = a + Math.PI/4; } }
+  for (let i=0;i<16;i++){ const a = i/16*Math.PI*2; add(podG, podM, cx+60*Math.sin(a), 0, cz+60*Math.cos(a)); }
+  flatRing(14, 2, '#ffffff', cx, cz, 0.6);
+  box(12,8,12, M('#d9d9d6'), cx,4,cz-30); box(12,8,12, M('#d9d9d6'), cx,4,cz+30);
+}
+[[-431,176],[431,176],[-431,1043],[431,1043],[0,1221]].forEach(([x,z]) => camp(x,z));
+/* entrance arch on Twistflower Rd */
+{ const g = new THREE.CylinderGeometry(36,36,16,18,1,true, -0.4, 2.0); add(g, D('#cfcfcc'), 640,8,-40); }
+
+/* ---------- journey ---------- */
+const V = (x,y,z) => new THREE.Vector3(x,y,z);
+const K = [
+  {p:V(22000,22000,118000), t:V(5000,0,15000), s:0},
+  {p:V(1900,1500,3300), t:V(0,0,0), s:1},
+  {p:V(640,560,1480), t:V(-40,0,620), s:2},
+  {p:V(175,150,215), t:V(-15,0,-45), s:3},
+  {p:V(38,9,-106), t:V(0,4,-122), s:4},
+  {p:V(5,5,-122), t:V(-12,1,-122)},
+  {p:V(-20,-4.5,-122), t:V(-40,-17,-122)},
+  {p:V(-38.8,-15.5,-123.2), t:V(-45,-16.5,-116), s:5},
+  {p:V(-44.8,-16,-120.3), t:V(-45,-16.5,-104)},
+  {p:V(-42,-15,-110), t:V(-50,-17.5,-88), s:6},
+  {p:V(-54,-15,-99.5), t:V(-54,-32,-90)},
+  {p:V(-54,-27,-92), t:V(-46,-29,-100)},
+  {p:V(-38,-27.5,-84), t:V(-58,-29.5,-100), s:7},
+  {p:V(-37.6,-29.5,-79.5), t:V(-11,-30,-23.5)},
+  {p:V(-33,-29.6,-70.5), t:V(-11,-30,-23.5), s:8},
+  {p:V(-14.5,-29.6,-30.5), t:V(-6,-31,-12)},
+  {p:V(-9.6,-28.2,-20.4), t:V(0,-160,1), s:9},
+  {p:V(-5,-34,-10), t:V(30,-30,40)},
+  {p:V(-2,-45,-4), t:V(0,400,40)},
+  {p:V(0,10,2), t:V(0,500,60)},
+  {p:V(80,62,105), t:V(0,28,0), s:10}
+];
+const STOPS = [
+  {name:'Roswell', eyebrow:'Roswell, New Mexico', title:'A Signal in the Desert', desc:'High desert, about 3,600 feet up. North of town, something is transmitting.'},
+  {name:'Approach', eyebrow:'The Approach', title:'Twistflower', desc:'A dozen Atlas F missile sites once ringed Roswell. This is the one that still calls.'},
+  {name:'Festival Grounds', eyebrow:'May 7–9, 2027', title:'Above and Below the Desert', desc:'The Twistflower Stage, the Stardome, Base Camp, and five camps for 1,000 curious minds, all within sight of the silo.', orbit:true},
+  {name:'The Site', eyebrow:'Surface', title:'The Site', desc:'From above, only a stairwell, a hatch, and two enormous doors give it away.', orbit:true},
+  {name:'Entry', eyebrow:'Surface · Entry', title:'The Entry', desc:'The only way the crew came in. Stairs drop two flights to a pair of blast doors.'},
+  {name:'Entrapment', eyebrow:'Below grade', title:'Entrapment Area', desc:'Two interlocked doors. One must close before the other will open.'},
+  {name:'Crew Quarters', eyebrow:'LCC · Level −1', title:'Crew Quarters', desc:'Bunks, a galley, and a hatch to the surface. The floor hangs from four air cylinders, built to ride out a nearby blast.'},
+  {name:'Launch Control', eyebrow:'LCC · Level −2', title:'Launch Control', desc:'Five crew stood alert at this bank of panels. From order to launch took about ten minutes.'},
+  {name:'Tunnel', eyebrow:'LCC · Level −2', title:'The Tunnel', desc:'An eight-foot steel tube to the missile, sealed by three blast doors.'},
+  {name:'The Silo', eyebrow:'Silo', title:'The Silo', desc:'One hundred seventy-four feet down and fifty-two across. Look down.'},
+  {name:'The Doors', eyebrow:'Surface', title:'Through the Doors', desc:'Up and out, through doors of about seventy-five tons each. The silo is calling.'}
+];
+const STOPK = K.map((k,i) => k.s !== undefined ? i : -1).filter(i => i >= 0);
+const LABELS = [
+  {stops:[0,1], text:'ROSWELL', pos:V(CX, 900, CZ), cls:'city'},
+  {stops:[0,1], text:'TWISTFLOWER', pos:V(0, 400, 0)},
+  {stops:[3], text:'ENTRY', pos:V(-6,14,-122), go:4},
+  {stops:[3], text:'SILO DOORS', pos:V(0,26,0), go:9},
+  {stops:[3], text:'ESCAPE HATCH', pos:V(-45,4,-95)},
+  {stops:[3], text:'ANTENNA SILO', pos:V(-63,4,-130)},
+  {stops:[3], text:'TWISTFLOWER RD', pos:V(230,3,-78)},
+  {stops:[2], text:'THE SILO', pos:V(0,40,0), go:3},
+  {stops:[2], text:'TWISTFLOWER STAGE', pos:V(-607,72,607), cls:'warm'},
+  {stops:[2], text:'STARDOME', pos:V(607,80,607)},
+  {stops:[2], text:'BASE CAMP', pos:V(0,40,607)},
+  {stops:[2], text:'FISSION FIELD', pos:V(-431,30,176), cls:'small'},
+  {stops:[2], text:'FISSION FIELD', pos:V(431,30,176), cls:'small'},
+  {stops:[2], text:'STARDUST CAMP', pos:V(-431,30,1043), cls:'small'},
+  {stops:[2], text:'STARDUST CAMP', pos:V(431,30,1043), cls:'small'},
+  {stops:[2], text:'AREA 51 OUTPOST', pos:V(0,30,1221), cls:'small'},
+  {stops:[2], text:'ENTRANCE', pos:V(640,40,-60), cls:'small'}
+];
+
+function cr(a,b,c,d,t,out){ const t2=t*t, t3=t2*t;
+  out.set(0.5*((2*b.x)+(-a.x+c.x)*t+(2*a.x-5*b.x+4*c.x-d.x)*t2+(-a.x+3*b.x-3*c.x+d.x)*t3),
+          0.5*((2*b.y)+(-a.y+c.y)*t+(2*a.y-5*b.y+4*c.y-d.y)*t2+(-a.y+3*b.y-3*c.y+d.y)*t3),
+          0.5*((2*b.z)+(-a.z+c.z)*t+(2*a.z-5*b.z+4*c.z-d.z)*t2+(-a.z+3*b.z-3*c.z+d.z)*t3)); return out; }
+const N = K.length;
+function sample(u, key, out){ u = Math.max(0, Math.min(N-1, u)); let i = Math.floor(u); if (i >= N-1) i = N-2; const f = u - i;
+  const a = K[Math.max(0,i-1)][key], b = K[i][key], c = K[i+1][key], d = K[Math.min(N-1,i+2)][key];
+  if (i === 0 && key === 'p'){ /* long first leg: ease altitude in log space */
+    const e = f*f*(3-2*f); const lb = Math.log(b.y), lc = Math.log(c.y);
+    out.lerpVectors(b, c, 1 - Math.pow(1-f, 2.2)); out.y = Math.exp(lb + (lc-lb)*e); return out; }
+  return cr(a,b,c,d,f,out); }
+
+let stop = 0, u = 0, anim = null, yaw = 0, pitch = 0, modeOrbit = false;
+const P = new THREE.Vector3(), T = new THREE.Vector3(), tmp = new THREE.Vector3();
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+const rail = $('rail'), dots = $('dots'), labelsEl = $('labels');
+STOPS.forEach((s,i) => {
+  const b = document.createElement('button'); b.type='button'; b.innerHTML = '<span>'+s.name+'</span><span class="n">'+String(i+1).padStart(2,'0')+'</span>'; b.addEventListener('click', () => go(i)); rail.appendChild(b);
+  const d = document.createElement('button'); d.type='button'; d.setAttribute('aria-label', 'Station '+(i+1)+': '+s.name); d.addEventListener('click', () => go(i)); dots.appendChild(d);
+});
+const tagEls = LABELS.map(L => { const el = document.createElement(L.go !== undefined ? 'button' : 'span'); el.className = 'tag' + (L.go !== undefined ? ' go' : '') + (L.cls ? ' '+L.cls : '');
+  el.textContent = L.text; if (L.go !== undefined){ el.type='button'; el.addEventListener('click', () => go(L.go)); } el.hidden = true; labelsEl.appendChild(el); return el; });
+
+function renderCard(){
+  const s = STOPS[stop];
+  $('eyebrow').textContent = 'Station ' + String(stop+1).padStart(2,'0') + ' / ' + STOPS.length + ' · ' + s.eyebrow;
+  $('title').textContent = s.title; $('desc').textContent = s.desc;
+  $('prev').disabled = stop === 0;
+  $('next').textContent = stop === 0 ? 'Begin Descent' : (stop === STOPS.length-1 ? 'Start Over' : 'Next: ' + STOPS[stop+1].name);
+  $('cta').hidden = stop !== STOPS.length-1;
+  $('next').classList.toggle('ghost', stop === STOPS.length-1); $('next').classList.toggle('primary', stop !== STOPS.length-1);
+  $('hint').textContent = s.orbit ? 'DRAG TO ORBIT THE SITE · TAP A LABEL TO GO THERE' : 'DRAG TO LOOK AROUND · ARROW KEYS TO MOVE';
+  [...rail.children].forEach((b,i) => b.toggleAttribute('aria-current', false) || (i===stop && b.setAttribute('aria-current','step')));
+  [...dots.children].forEach((d,i) => d.classList.toggle('done', i <= stop));
+}
+function go(i){
+  i = Math.max(0, Math.min(STOPS.length-1, i)); if (i === stop && !anim) return;
+  const from = anim ? u : STOPK[stop], to = STOPK[i];
+  const far = (stop === 0 || i === 0) && Math.abs(i - stop) >= 1;
+  const dur = reduce ? 350 : (far ? 5200 : Math.min(7000, 1300 + 520*Math.abs(to - from)));
+  modeOrbit = !!STOPS[stop].orbit;
+  anim = {from, to, t0:performance.now(), dur, y0:yaw, p0:pitch};
+  stop = i; renderCard();
+}
+$('next').addEventListener('click', () => go(stop === STOPS.length-1 ? 0 : stop+1));
+$('prev').addEventListener('click', () => go(stop-1));
+window.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') && (e.key === ' ' || e.key === 'Enter')) return;
+  if (['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); if (stop < STOPS.length-1) go(stop+1); }
+  if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); go(stop-1); }
+});
+let wheelAcc = 0, wheelLock = 0;
+canvas.addEventListener('wheel', e => { e.preventDefault(); if (anim || performance.now() < wheelLock) return; wheelAcc += e.deltaY;
+  if (Math.abs(wheelAcc) > 80){ go(stop + (wheelAcc > 0 ? 1 : -1)); wheelAcc = 0; wheelLock = performance.now() + 600; } }, {passive:false});
+let drag = null;
+canvas.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY}; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); });
+canvas.addEventListener('pointermove', e => { if (!drag || anim) return; const dx = e.clientX-drag.x, dy = e.clientY-drag.y; drag = {x:e.clientX, y:e.clientY};
+  if (STOPS[stop].orbit){ yaw -= dx*0.006; pitch = Math.max(-0.55, Math.min(0.5, pitch + dy*0.004)); }
+  else { yaw = Math.max(-1.1, Math.min(1.1, yaw + dx*0.004)); pitch = Math.max(-0.7, Math.min(0.7, pitch - dy*0.0035)); } });
+const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
+canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
+
+/* ---------- loop ---------- */
+const ease = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+function resize(){ const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w,h,false); camera.aspect = w/h; camera.fov = w < 600 ? 66 : 55; camera.updateProjectionMatrix(); }
+window.addEventListener('resize', resize); resize();
+const yAxis = new THREE.Vector3(0,1,0), right = new THREE.Vector3();
+function frame(now){
+  if (anim){ const k = Math.min(1, (now - anim.t0)/anim.dur), e = ease(k); u = anim.from + (anim.to - anim.from)*e;
+    yaw = anim.y0*(1-e); pitch = anim.p0*(1-e); if (k >= 1){ anim = null; u = STOPK[stop]; yaw = 0; pitch = 0; } }
+  sample(u,'p',P); sample(u,'t',T);
+  const orbit = anim ? modeOrbit : !!STOPS[stop].orbit;
+  if (orbit){ tmp.copy(P).sub(T); const sph = new THREE.Spherical().setFromVector3(tmp); sph.theta += yaw; sph.phi = Math.max(0.2, Math.min(1.45, sph.phi - pitch)); tmp.setFromSpherical(sph); P.copy(T).add(tmp); camera.position.copy(P); camera.lookAt(T); }
+  else { tmp.copy(T).sub(P); tmp.applyAxisAngle(yAxis, -yaw); right.crossVectors(tmp, yAxis).normalize(); tmp.applyAxisAngle(right, pitch); camera.position.copy(P); camera.lookAt(tmp.add(P)); }
+  const s = now/1000;
+  beams.forEach(b => { b.grp.rotation.x = b.ax*Math.sin(s*b.sp + b.ph); b.grp.rotation.z = b.az*Math.cos(s*b.sp*0.8 + b.ph*1.3); });
+  shaftLight.intensity = 2.2 + 0.35*Math.sin(s*1.7);
+  const y = camera.position.y; $('depth').textContent = y >= 0 ? 'ALT ' + Math.round(y).toLocaleString('en-US') + ' FT' : 'DEPTH ' + Math.round(-y) + ' FT';
+  const w = window.innerWidth, h = window.innerHeight;
+  LABELS.forEach((L,i) => { const el = tagEls[i]; const show = !anim && L.stops.includes(stop);
+    if (!show){ el.hidden = true; return; } tmp.copy(L.pos).project(camera);
+    if (tmp.z > 1 || tmp.z < -1 || Math.abs(tmp.x) > 1.1 || Math.abs(tmp.y) > 1.1){ el.hidden = true; return; }
+    el.hidden = false; el.style.transform = 'translate(' + ((tmp.x*0.5+0.5)*w) + 'px,' + ((-tmp.y*0.5+0.5)*h - 14) + 'px) translate(-50%,-100%)'; });
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+renderCard();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
