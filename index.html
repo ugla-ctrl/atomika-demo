@@ -653,7 +653,8 @@ function frame(now){
     const start = e => { if ((e && e.target === sbtn) || started || !wantSound) return; started = true; bgm.volume = 0;
       bgm.play().then(() => { fadeTo(0.8); setLabel(); }).catch(() => { started = false; }); };
     start();
-    ['pointerdown','keydown','touchstart'].forEach(ev => window.addEventListener(ev, start, {passive:true}));
+    /* iPhone Safari only counts touchend and click as a tap that may start audio, so listen for those too */
+    ['pointerdown','pointerup','touchend','click','keydown'].forEach(ev => window.addEventListener(ev, start, {passive:true, capture:true}));
     sbtn.addEventListener('click', () => { if (bgm.paused){ wantSound = true; started = false; start(); } else { wantSound = false; bgm.pause(); } });
     bgm.addEventListener('play', setLabel); bgm.addEventListener('pause', setLabel); setLabel(); } }
 renderCard();
