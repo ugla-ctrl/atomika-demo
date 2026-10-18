@@ -143,6 +143,7 @@ const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color:c, rough
 const D = (c, o) => M(c, Object.assign({side:THREE.DoubleSide}, o||{}));
 const G = (c, o) => new THREE.MeshBasicMaterial(Object.assign({color:c}, o||{}));
 const HIDE = new THREE.MeshBasicMaterial({visible:false});
+const animators = [];
 function add(geo, mat, x, y, z, parent){ const m = new THREE.Mesh(geo, mat); m.position.set(x||0, y||0, z||0); (parent||scene).add(m); return m; }
 function box(w,h,d,mat,x,y,z,ry){ const m = add(new THREE.BoxGeometry(w,h,d), mat, x,y,z); if (ry) m.rotation.y = ry; return m; }
 const smooth = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
@@ -280,22 +281,83 @@ function wallBand(r, y0, y1, gapAt, gapW, mat){
   const g = gapW ? new THREE.CylinderGeometry(r,r,y1-y0,48,1,true, gapAt+gapW, Math.PI*2-2*gapW) : new THREE.CylinderGeometry(r,r,y1-y0,48,1,true);
   return add(g, mat, C.x, (y0+y1)/2, C.z); }
 wallBand(20,-14,-11,0,0,lccWall); wallBand(20,-21,-14,TUN,0.12,lccWall);
-wallBand(20,-24,-21,0,0,lccWall); wallBand(20,-31,-24,TUN,0.12,lccWall);
+/* Level -2: immersive projection, the walls become moving pictures of deep space */
+const projCanvas = document.createElement('canvas'); projCanvas.width = 1024; projCanvas.height = 256; const pctx = projCanvas.getContext('2d');
+const projA = new THREE.CanvasTexture(projCanvas), projB = new THREE.CanvasTexture(projCanvas);
+[projA, projB].forEach(tx => { tx.wrapS = THREE.RepeatWrapping; });
+projA.repeat.set(3, 2/9); projA.offset.set(0, 7/9); projB.repeat.set(3*(Math.PI*2-0.24)/(Math.PI*2), 7/9);
+wallBand(20,-24,-22,0,0,new THREE.MeshBasicMaterial({map:projA, side:THREE.DoubleSide}));
+wallBand(20,-31,-24,TUN,0.12,new THREE.MeshBasicMaterial({map:projB, side:THREE.DoubleSide}));
+const starsP = Array.from({length:420}, () => ({x:Math.random()*1024, y:Math.random()*256, r:Math.random()*1.4+0.3, v:4+Math.random()*10, ph:Math.random()*6}));
+function drawSpace(s){
+  const g = pctx.createLinearGradient(0,0,0,256); g.addColorStop(0,'#01020a'); g.addColorStop(1,'#0a1030'); pctx.fillStyle = g; pctx.fillRect(0,0,1024,256);
+  const blob = (x,y,r,c) => { for (const dx of [-1024,0,1024]){ const rg = pctx.createRadialGradient(x+dx,y,0,x+dx,y,r); rg.addColorStop(0,c); rg.addColorStop(1,'rgba(0,0,0,0)'); pctx.fillStyle = rg; pctx.fillRect(x+dx-r,y-r,2*r,2*r); } };
+  pctx.globalCompositeOperation = 'lighter';
+  blob((s*6)%1024, 110+20*Math.sin(s*0.2), 170, 'rgba(1,207,254,0.22)');
+  blob((420+s*4)%1024, 150+25*Math.cos(s*0.15), 210, 'rgba(5,122,217,0.30)');
+  blob((760+s*9)%1024, 90, 140, 'rgba(255,140,1,0.18)');
+  pctx.globalCompositeOperation = 'source-over';
+  starsP.forEach(p => { const x = (p.x + s*p.v) % 1024; pctx.globalAlpha = 0.5 + 0.5*Math.sin(s*2 + p.ph); pctx.fillStyle = '#ffffff'; pctx.fillRect(x, p.y, p.r, p.r); }); pctx.globalAlpha = 1;
+  const px = (200 + s*12) % 1024;
+  for (const dx of [-1024,0,1024]){ const cx = px+dx; if (cx < -120 || cx > 1144) continue;
+    const pg = pctx.createRadialGradient(cx-25,110,8,cx,128,78); pg.addColorStop(0,'#bfe9ff'); pg.addColorStop(0.45,'#2f7fd0'); pg.addColorStop(1,'#061430');
+    pctx.fillStyle = pg; pctx.beginPath(); pctx.arc(cx,128,74,0,Math.PI*2); pctx.fill();
+    pctx.fillStyle = 'rgba(0,0,8,0.55)'; pctx.beginPath(); pctx.arc(cx+30,128,74,-Math.PI/2,Math.PI/2); pctx.fill();
+    pctx.fillStyle = '#d9d6cf'; pctx.beginPath(); pctx.arc(cx+130,80+10*Math.sin(s*0.5),14,0,Math.PI*2); pctx.fill(); }
+  const k = (s*0.37)%1; if (k < 0.25){ const sx = (s*97)%1024, sy = 40+((s*53)%120); pctx.strokeStyle = 'rgba(255,238,169,'+(1-k*4)+')'; pctx.lineWidth = 2; pctx.beginPath(); pctx.moveTo(sx,sy); pctx.lineTo(sx-60,sy+18); pctx.stroke(); }
+  projA.needsUpdate = true; projB.needsUpdate = true;
+}
+let lastDraw = 0; animators.push(s => { if (s - lastDraw > 1/30){ drawSpace(s); lastDraw = s; } });
+drawSpace(0);
 { const g = new THREE.SphereGeometry(20,32,8,0,Math.PI*2,0,Math.PI/2); const m = add(g, D('#cfcac0'), C.x,-11,C.z); m.scale.y = 0.18; }
-{ const g = new THREE.CylinderGeometry(19.8,19.8,1,48); add(g, M('#7d6e5c'), C.x,-21.5,C.z); }
-{ const g = new THREE.CircleGeometry(19.8,48); g.rotateX(-Math.PI/2); add(g, D('#6f6252'), C.x,-31,C.z); }
+{ const g = new THREE.CylinderGeometry(19.8,19.8,1,48); add(g, [M('#8c8a7e'),M('#8c8a7e'),M('#0a0c14')], C.x,-21.5,C.z); }
+{ const g = new THREE.CircleGeometry(19.8,48); g.rotateX(-Math.PI/2); add(g, D('#121522'), C.x,-31,C.z); }
 /* central column with its flared capital at each ceiling (both visible in the site photos) */
 add(new THREE.CylinderGeometry(1.7,1.7,20,24), M('#e3dfd6'), C.x,-21,C.z);
 add(new THREE.CylinderGeometry(6,1.7,3.5,40,1,true), D('#e3dfd6'), C.x,-12.75,C.z);
 add(new THREE.CylinderGeometry(5,1.7,3,40,1,true), D('#e3dfd6'), C.x,-23.5,C.z);
 const ringAt = (r, tube, y, color) => { const m = add(new THREE.TorusGeometry(r,tube,4,72), G(color), C.x,y,C.z); m.rotation.x = Math.PI/2; return m; };
-ringAt(6, 0.14, -11.1, '#FF8C01'); ringAt(19.5, 0.13, -12.2, '#FF8C01'); ringAt(19.5, 0.13, -22.6, '#FF8C01');
-/* seating as shown in the event render */
-{ const pg = new THREE.CylinderGeometry(0.95,0.95,1.5,12), pm = M('#ece8e0'); const near = (a,c,w) => Math.abs(((a-c+Math.PI*3)%(Math.PI*2))-Math.PI) < w;
-  for (let i=0;i<16;i++){ const a = i/16*Math.PI*2 + 0.2; if (near(a,TUN,0.35)) continue; add(pg, pm, C.x+13.5*Math.sin(a), -20.25, C.z+13.5*Math.cos(a)); }
-  for (let i=0;i<14;i++){ const a = i/14*Math.PI*2 + 0.1; if (near(a,TUN,0.35)) continue; add(pg, pm, C.x+13*Math.sin(a), -30.25, C.z+13*Math.cos(a)); } }
-{ const l = new THREE.PointLight('#ffd2a0', 0.85, 42, 1.4); l.position.set(C.x,-13,C.z); scene.add(l); }
-{ const l = new THREE.PointLight('#ffc890', 0.8, 40, 1.4); l.position.set(C.x,-24.5,C.z); scene.add(l); }
+ringAt(6, 0.14, -11.1, '#FF8C01'); ringAt(19.5, 0.13, -12.2, '#FF8C01'); 
+/* Level -1, restaged as 1962: a ring of control panels, the launch console, and a crew of five at work */
+const near = (a,c,w) => Math.abs(((a-c+Math.PI*3)%(Math.PI*2))-Math.PI) < w;
+const blinkers = [];
+{ const pal = ['#FF0000','#FFEEA9','#01CFFE','#FF7E1D','#7CFF8A','#FFEEA9'];
+  for (let i=0;i<14;i++){ const a = TUN + 0.55 + i*(Math.PI*2-1.1)/13; const g = new THREE.Group(); g.position.set(C.x+18.2*Math.sin(a), -17.75, C.z+18.2*Math.cos(a)); g.rotation.y = a + Math.PI; scene.add(g);
+    g.add(new THREE.Mesh(new THREE.BoxGeometry(3.8,6.5,1.6), M(i%3 ? '#7f8a84' : '#6f7a75')));
+    const sc = new THREE.Mesh(new THREE.BoxGeometry(2.4,1.3,0.08), G(i%4===0 ? '#0e3b2c' : '#10202a')); sc.position.set(0,1.9,0.82); g.add(sc);
+    for (let k=0;k<12;k++){ const li = new THREE.Mesh(new THREE.BoxGeometry(0.32,0.22,0.08), G(pal[(i*3+k)%pal.length])); li.position.set(-1.35+(k%6)*0.54, 0.6-Math.floor(k/6)*0.45, 0.82); g.add(li); blinkers.push(li); }
+    for (let k=0;k<4;k++){ const d = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.08,12), M('#e8e4d8')); d.rotation.x = Math.PI/2; d.position.set(-1.2+k*0.8,-0.6,0.82); g.add(d); }
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(3.8,0.25,1.4), M('#5d6763')); desk.position.set(0,-0.6,1.4); g.add(desk); } }
+{ const a = TUN + Math.PI; const g = new THREE.Group(); g.position.set(C.x+11*Math.sin(a), -21, C.z+11*Math.cos(a)); g.rotation.y = a; scene.add(g);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(9,2.8,3), M('#7f8a84')); body.position.y = 1.4; g.add(body);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(9,1.6,0.6), M('#6f7a75')); top.position.set(0,3.4,-1.1); top.rotation.x = -0.35; g.add(top);
+  for (let k=0;k<14;k++){ const li = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.08), G(['#FF0000','#01CFFE','#FFEEA9','#FF7E1D'][k%4])); li.position.set(-3.9+k*0.6, 3.5, -0.75); li.rotation.x = -0.35; g.add(li); blinkers.push(li); }
+  const key = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.2,0.7), G('#FF0000')); key.position.set(0,2.9,0.6); g.add(key); }
+animators.push(s => { const tick = Math.floor(s*4); if (tick !== animators._t){ animators._t = tick; for (let i=0;i<8;i++){ const b = blinkers[(Math.random()*blinkers.length)|0]; b.visible = !b.visible; } } });
+/* re-enactors: simple low-poly figures in period crew blues */
+function crewFigure(color){
+  const g = new THREE.Group(), cm = M(color), skin = M('#c9a58a');
+  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.45,2.8,0.5), M('#2c3442')); legL.position.set(-0.3,1.4,0); legL.geometry.translate(0,-1.4,0); legL.position.y = 2.8; g.add(legL);
+  const legR = legL.clone(); legR.position.x = 0.3; g.add(legR);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(1.25,2.2,0.7), cm); torso.position.y = 3.9; g.add(torso);
+  const armG = new THREE.BoxGeometry(0.32,2.1,0.38); armG.translate(0,-1.05,0);
+  const armL = new THREE.Mesh(armG, cm); armL.position.set(-0.8,4.9,0); g.add(armL); const armR = new THREE.Mesh(armG, cm); armR.position.set(0.8,4.9,0); g.add(armR);
+  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42,1), skin); head.position.y = 5.45; g.add(head);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.46,0.46,0.22,10), M('#1f2a3d')); cap.position.y = 5.8; g.add(cap);
+  g.userData = {legL, legR, armL, armR}; return g; }
+const crew = [];
+[[12.5, TUN+1.2, TUN+2.6, 0.35, 0.0], [14.5, TUN+3.3, TUN+4.9, 0.28, 1.7], [9, TUN+2.2, TUN+4.0, 0.22, 3.1]].forEach(([r,a0,a1,sp,ph]) => {
+  const f = crewFigure('#4f6585'); scene.add(f); crew.push({f, r, a0, a1, sp, ph, walk:true}); });
+[[TUN+Math.PI-0.18, 8.4], [TUN+Math.PI+0.18, 8.4]].forEach(([a,r]) => { const f = crewFigure('#5b6f8f'); f.position.set(C.x+r*Math.sin(a), -21, C.z+r*Math.cos(a)); f.rotation.y = a + Math.PI; scene.add(f); crew.push({f, a, walk:false, ph:a*3}); });
+animators.push(s => { crew.forEach(c => { const u = c.f.userData;
+  if (c.walk){ const k = 0.5 - 0.5*Math.cos(s*c.sp + c.ph); const a = c.a0 + (c.a1-c.a0)*k; const vel = Math.sin(s*c.sp + c.ph);
+    c.f.position.set(C.x + c.r*Math.sin(a), -21, C.z + c.r*Math.cos(a)); c.f.rotation.y = a + (vel >= 0 ? Math.PI/2 : -Math.PI/2);
+    const sw = Math.sin(s*6 + c.ph)*0.5*Math.min(1, Math.abs(vel)*1.5); u.legL.rotation.x = sw; u.legR.rotation.x = -sw; u.armL.rotation.x = -sw*0.8; u.armR.rotation.x = sw*0.8; }
+  else { u.armR.rotation.x = -1.0 + 0.25*Math.sin(s*1.7 + c.ph); u.armL.rotation.x = -0.8 + 0.2*Math.cos(s*1.3 + c.ph); } }); });
+/* Level -2 visitors, silhouetted against the projections */
+[[4.2, 9], [2.2, 7], [5.6, 11.5]].forEach(([a,r]) => { const f = crewFigure('#11141c'); f.position.set(C.x+r*Math.sin(a), -31, C.z+r*Math.cos(a)); f.rotation.y = a; scene.add(f); });
+{ const l = new THREE.PointLight('#e8f0ff', 1.05, 42, 1.4); l.position.set(C.x,-13,C.z); scene.add(l); }
+{ const l = new THREE.PointLight('#3f6fd8', 0.7, 40, 1.4); l.position.set(C.x,-25,C.z); scene.add(l); }
 
 /* ---------- tunnel: about 40 ft from the stair shaft to the silo, with a blast-door vestibule near the silo ---------- */
 const TA = W(38.5,0,-27), TB = W(79.1,0,-27);
@@ -417,8 +479,8 @@ const STOPS = [
   {name:'The Site', eyebrow:'Surface', title:'The Site', desc:'From above, only a stairwell, a hatch, and two enormous doors give it away.', orbit:true},
   {name:'Entry', eyebrow:'Surface · Entry', title:'The Entry', desc:'The only way the crew came in. One long flight of stairs drops beneath the desert to a pair of blast doors.'},
   {name:'Stair Shaft', eyebrow:'Below grade', title:'The Stair Shaft', desc:'Past the blast doors, switchback stairs drop through a concrete shaft that serves every level, from the crew rooms to the tunnel.'},
-  {name:'Upper Chamber', eyebrow:'LCC · Level −1', title:'The Upper Chamber', desc:'Once the crew’s quarters. Now one open round room, forty feet across, gathered around a single column.'},
-  {name:'Launch Control', eyebrow:'LCC · Level −2', title:'Launch Control', desc:'This is where the order would have come. Today the lower room is open and quiet, waiting for a different kind of transmission.'},
+  {name:'Launch Control', eyebrow:'LCC · Level −1 · 1962', title:'Launch Control, 1962', desc:'The upper chamber returns to its alert posture. A crew of five works the panels as if the order could come at any moment.'},
+  {name:'Deep Space', eyebrow:'LCC · Level −2 · Immersive', title:'Deep Space', desc:'Below the crew, the walls dissolve into moving pictures of the cosmos. A different kind of transmission.'},
   {name:'Tunnel', eyebrow:'Below grade', title:'The Tunnel', desc:'Forty feet of corrugated steel from the base of the stair shaft to the silo, sealed by blast doors.'},
   {name:'The Silo', eyebrow:'Silo', title:'The Silo', desc:'One hundred seventy-four feet down and fifty-two across. Look down.'},
   {name:'The Doors', eyebrow:'Surface', title:'Through the Doors', desc:'Up and out, through doors of about seventy-five tons each. The silo is calling.'}
@@ -521,6 +583,7 @@ function frame(now){
   if (orbit){ tmp.copy(P).sub(T); const sph = new THREE.Spherical().setFromVector3(tmp); sph.theta += yaw; sph.phi = Math.max(0.2, Math.min(1.45, sph.phi - pitch)); tmp.setFromSpherical(sph); P.copy(T).add(tmp); camera.position.copy(P); camera.lookAt(T); }
   else { tmp.copy(T).sub(P); tmp.applyAxisAngle(yAxis, -yaw); right.crossVectors(tmp, yAxis).normalize(); tmp.applyAxisAngle(right, pitch); camera.position.copy(P); camera.lookAt(tmp.add(P)); }
   const s = now/1000;
+  animators.forEach(f => f(s));
   beams.forEach(b => { b.grp.rotation.x = b.ax*Math.sin(s*b.sp + b.ph); b.grp.rotation.z = b.az*Math.cos(s*b.sp*0.8 + b.ph*1.3); });
   shaftLight.intensity = 2.2 + 0.35*Math.sin(s*1.7);
   const y = camera.position.y; $('depth').textContent = y >= 0 ? 'ALT ' + Math.round(y).toLocaleString('en-US') + ' FT' : 'DEPTH ' + Math.round(-y) + ' FT';
