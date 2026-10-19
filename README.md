@@ -4,7 +4,10 @@ Interactive 3D prototype for ATOMIKA: a descent from the sky over Roswell into t
 
 Live at https://demo.atomikafest.com
 
-- Single static page (`index.html`), three.js r128 from cdnjs.
+- Single static page (`index.html`), three.js r128 from cdnjs, plus the r128 post-processing add-ons (EffectComposer, UnrealBloomPass) from jsDelivr.
+- Rendering: linear HDR scene, ACES filmic tone mapping, bloom, film grain and vignette; moonlight shadows; image-based reflections (procedural night sky outside, a fluorescent-room environment underground); exposure adapts when you go below grade. Pixel ratio steps down automatically on slower devices; add `?hq` to turn that off.
+- `tex/` holds photo-scanned PBR textures (color, normal, roughness at 1k) from [Poly Haven](https://polyhaven.com), CC0. Each is tinted in code so it averages to the color it replaced in the original palette.
+- `?station=N` opens straight at station N (1 to 11).
 - `og.png` is the social share image.
 - Hosted on GitHub Pages; `CNAME` sets the custom domain.
 
