@@ -15,8 +15,15 @@ def main():
     folder = sys.argv[1]
     cols = int(sys.argv[2]) if len(sys.argv) > 2 else 4
     groups = defaultdict(list)
-    for f in sorted(glob.glob(os.path.join(folder, '*.png'))):
-        groups[os.path.basename(f).split('-')[0]].append(f)
+    rep = os.path.join(folder, 'report.json')
+    if os.path.exists(rep):  # group by the device recorded for each screenshot (device names can contain '-')
+        import json
+        for r in json.load(open(rep))['results']:
+            shots = [r.get('screenshot'), r.get('cleanShot')] + [x for st in r.get('steps', []) for x in (st['mid'], st['end'])]
+            groups[r['device']] += [s for s in shots if s and os.path.exists(s)]
+    else:
+        for f in sorted(glob.glob(os.path.join(folder, '*.png'))):
+            groups[os.path.basename(f).split('-')[0]].append(f)
     for dev, files in groups.items():
         ims = [Image.open(f).convert('RGB') for f in files]
         w = 420
