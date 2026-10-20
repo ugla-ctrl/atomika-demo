@@ -963,7 +963,7 @@ function frame(now){
   shaftLight.intensity = 2.2 + 0.35*Math.sin(s*1.7);
   const y = camera.position.y; $('depth').textContent = y >= 0 ? 'ALT ' + Math.round(y).toLocaleString('en-US') + ' FT' : 'DEPTH ' + Math.round(-y) + ' FT';
   const w = window.innerWidth, h = window.innerHeight;
-  LABELS.forEach((L,i) => { const el = tagEls[i]; const show = !anim && L.stops.includes(stop);
+  LABELS.forEach((L,i) => { const el = tagEls[i]; const show = !anim && !photoCover && L.stops.includes(stop); /* 3D hotspots only when the 3D is what's on screen */
     if (!show){ el.hidden = true; return; } tmp.copy(L.pos).project(camera);
     if (tmp.z > 1 || tmp.z < -1 || Math.abs(tmp.x) > 1.1 || Math.abs(tmp.y) > 1.1){ el.hidden = true; return; }
     el.hidden = false; const hw = (el.offsetWidth || 0)/2 + 8, lx = Math.max(hw, Math.min(w - hw, (tmp.x*0.5+0.5)*w)); /* keep labels fully on screen */
