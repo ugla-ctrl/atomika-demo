@@ -851,7 +851,7 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   startTransition(c && c.ready && !reduce ? c : null, now);
   return tr.dur; }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
-  if (c){ tr.clip = c; c.v.currentTime = 0; c.v.play().catch(() => { tr.clip = null; tr.dur = 3600; }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000); }
+  if (c){ tr.clip = c; c.v.currentTime = 0; c.v.playbackRate = 1; c.v.play().catch(() => { tr.clip = null; tr.dur = 3600; }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
   else { tr.clip = null; tr.dur = reduce ? 350 : 4200; } /* unhurried: a slow push out of one photo and a slow settle into the next */
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
 function updatePlates(now){
@@ -862,7 +862,13 @@ function updatePlates(now){
     else { const pl = plates[tr.from]; for (const k in plates) if (plates[k] !== pl) plates[k].img.style.opacity = '0';
       if (pl && pl.ready){ pl.img.style.opacity = '1'; pl.img.style.transform = 'scale(' + (1.035 + 0.02*Math.min(1, (now - tr.t0)/3000)).toFixed(4) + ')'; photoCover = true; canvas.style.opacity = '0'; }
       return; } }
-  const p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
+  let p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
+  if (tr && tr.clip){ const v = tr.clip.v, d = v.duration || 0, ct = v.currentTime, lr = loops[tr.to] && loops[tr.to].ready;
+    /* ease the film down into the loop's crawl over its last 2.5 s, and up out of the previous loop over its first 1.2 s */
+    const rem = d - ct, k = rem < 2.5 ? 1 - rem/2.5 : 0, r = ct < 1.2 ? 0.35 + 0.65*(0.5 - 0.5*Math.cos(Math.PI*ct/1.2)) : 1;
+    v.playbackRate = Math.max(0.0625, Math.min(r, lr ? 1 - 0.95*(0.5 - 0.5*Math.cos(Math.PI*k)) : 1));
+    if (d) p = Math.min(p, Math.max(0, Math.min(1, ct/d)));      /* progress follows the film itself */
+    if (v.ended || (d && ct >= d - 0.04)) p = 1; }
   if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; }
   if (!tr){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
   /* photos load on demand: this station and its neighbors */
@@ -887,7 +893,7 @@ function updatePlates(now){
   const fe = tr && tr.clip ? Math.min(0.4, 2000/tr.dur) : 0, endFade = tr && tr.clip ? smooth(1 - fe, 1, p) : 0;
   const loopReady = tr && tr.clip && loops[tr.to] && loops[tr.to].ready;
   if (tr && tr.clip && p > 1 - fe && !loopReady){ const pl = plates[tr.to]; if (pl && pl.ready){ pl.img.style.opacity = '1'; pl.img.style.transform = 'scale(' + (1.04 + 0.03*(1 - smooth(1 - fe, 1, p))).toFixed(4) + ')'; cover = true; } }
-  if (loopReady && p > 1 - fe){ const l = loops[tr.to]; if (!l.armed){ l.armed = true; l.v.pause(); l.v.currentTime = Math.max(0, l.v.duration/2 - 0.05); } } /* park the loop on the film's last frame (the ping-pong's turning point) */
+  if (loopReady && p > 1 - fe){ const l = loops[tr.to]; if (!l.armed){ l.armed = true; l.v.pause(); l.v.currentTime = 0; } } /* park the loop on its first frame: the film's last frame, at zero velocity */
   if (tr && tr.clip && tr.fadeIn){ const f = smooth(0, Math.min(0.4, tr.fadeMs/tr.dur), p), pl = plates[tr.from];
     if (pl && pl.ready){ pl.img.style.opacity = (1 - f).toFixed(3); cover = true; } }
   for (const k in clips){ const on = !!(tr && tr.clip === clips[k]), o = on ? (tr.fadeIn ? smooth(0, Math.min(0.4, tr.fadeMs/tr.dur), p) : 1)*(loopReady ? 1 : 1 - endFade) : 0;
