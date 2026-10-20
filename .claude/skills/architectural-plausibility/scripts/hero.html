@@ -1,0 +1,93 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Hero stair render</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}canvas{display:block}</style></head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* Photoreal stair render from the same spec as blockout.html. Exact geometry, PBR materials, warm caged-bulb lighting.
+   ?spec=<json url>&tex=<texture dir url>&w=&h=   -> window.__ready when drawn. */
+(async () => {
+  const q = new URLSearchParams(location.search), spec = await (await fetch(q.get('spec'))).json();
+  const W = +(q.get('w') || 2304), H = +(q.get('h') || 1296), TEX = q.get('tex') || '/tex';
+  const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true}); renderer.setSize(W, H);
+  renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = spec.render?.exposure ?? 1.0;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.physicallyCorrectLights = true;
+  document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#050403');
+  const cam = new THREE.PerspectiveCamera(spec.camera.fov || 45, W/H, 0.1, 500); cam.position.set(...spec.camera.pos); cam.lookAt(new THREE.Vector3(...spec.camera.look));
+  const L = new THREE.TextureLoader();
+  const load = u => new Promise((res, rej) => L.load(u, t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; res(t); }, undefined, rej));
+  const set = async (name, enc) => { const [d, n, r] = await Promise.all([load(`${TEX}/${name}_diff.jpg`), load(`${TEX}/${name}_nor.jpg`), load(`${TEX}/${name}_rough.jpg`)]); d.encoding = THREE.sRGBEncoding; return {map:d, normalMap:n, roughnessMap:r}; };
+  const [plate, concrete, panel] = await Promise.all([set('plate'), set('concrete'), set('panel')]);
+  const mat = (t, o) => { const m = new THREE.MeshStandardMaterial(Object.assign({}, t, o)); return m; };
+  const tile = (m, sx, sy) => { const c = m.clone(); ['map','normalMap','roughnessMap'].forEach(k => { if (c[k]) { c[k] = c[k].clone(); c[k].repeat.set(sx, sy); c[k].needsUpdate = true; } }); return c; };
+  const M = {
+    plate:   mat(plate,    {color:'#c9c1b1', metalness:0.25, roughness:0.55, normalScale:new THREE.Vector2(1.4, 1.4)}),
+    riser:   mat(panel,    {color:'#26272a', metalness:0.45, roughness:0.75}),
+    steel:   mat(panel,    {color:'#5c5d60', metalness:0.35, roughness:0.6}),
+    wall:    mat(concrete, {color:'#4a443b', metalness:0,    roughness:0.97}),
+    floor:   mat(concrete, {color:'#55504a', metalness:0,    roughness:1}),
+    pipe:    new THREE.MeshStandardMaterial({color:'#9d9e9b', metalness:0.7, roughness:0.4}),
+    plateD:  new THREE.MeshStandardMaterial({color:'#6b6c6a', metalness:0.9, roughness:0.5}),
+    nosing:  new THREE.MeshStandardMaterial({color:'#d8d2c4', metalness:0.6, roughness:0.35}),
+    gap:     new THREE.MeshStandardMaterial({color:'#1a1a1d', metalness:0, roughness:1, transparent:true, opacity:0.75})
+  };
+  const add = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; scene.add(o); return o; };
+  const box = (min, max, m) => { const sx = max[0]-min[0], sy = max[1]-min[1], sz = max[2]-min[2]; const g = new THREE.BoxGeometry(sx, sy, sz); g.translate((min[0]+max[0])/2, (min[1]+max[1])/2, (min[2]+max[2])/2); return add(g, m); };
+  /* boxes: role by shade convention from the spec: walls (>=0.8) concrete, landings plate, floors dark concrete */
+  (spec.boxes || []).forEach(b => { const sx = b.max[0]-b.min[0], sz = b.max[2]-b.min[2], sy = b.max[1]-b.min[1];
+    const role = b.role || (b.shade >= 0.8 ? 'wall' : b.shade <= 0.5 ? 'floor' : 'landing');
+    if (role === 'wall') box(b.min, b.max, tile(M.wall, Math.max(sx, sz)/8, sy/8)).userData.wall = true;
+    else if (role === 'floor') box(b.min, b.max, tile(M.floor, sx/6, sz/6));
+    else { box(b.min, b.max, tile(M.plate, sx/1.4, sz/1.4)); /* landing: plate top with a steel edge below */
+      box([b.min[0], b.min[1]-0.35, b.min[2]], [b.max[0], b.min[1], b.max[2]], M.steel); } });
+  const tube = (a, b, rad, m) => { const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), len = A.distanceTo(B); if (len < 1e-3) return;
+    const g = new THREE.CylinderGeometry(rad, rad, len, 24); const o = new THREE.Mesh(g, m); o.castShadow = true; o.userData.rail = true;
+    o.position.copy(A).add(B).multiplyScalar(0.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), B.clone().sub(A).normalize()); scene.add(o); return o; };
+  (spec.flights || []).forEach(f => {
+    const n = Math.max(1, Math.round(f.rise/(f.riser || 0.6))), r = f.rise/n, t = f.tread || 0.95, w = f.width || 4;
+    const s = f.dir[0] === '+' ? 1 : -1, ax = f.dir[1];
+    const P = (along, y, across) => ax === 'x' ? [f.start[0] + s*along, y, f.start[2] + across] : [f.start[0] + across, y, f.start[2] + s*along];
+    const seg = (a0, a1, y0, y1, c0, c1, m) => { const p = P(a0, y0, c0), q = P(a1, y1, c1);
+      return box([Math.min(p[0], q[0]), Math.min(p[1], q[1]), Math.min(p[2], q[2])], [Math.max(p[0], q[0]), Math.max(p[1], q[1]), Math.max(p[2], q[2])], m); };
+    for (let i = 0; i < n; i++){ const y1 = f.start[1] - (i+1)*r;
+      seg(i*t - 0.1, (i+1)*t, y1 - 0.14, y1, 0, w, tile(M.plate, w/1.4, t/1.4));       /* tread with a nosing overhang */
+      { const a = P(i*t - 0.1, y1 - 0.02, 0.02), b = P(i*t - 0.1, y1 - 0.02, w - 0.02); tube(a, b, 0.06, M.nosing); }   /* rounded steel nosing: catches light */
+      seg((i+1)*t - 0.32, (i+1)*t, y1 - 0.004, y1 + 0.004, 0, w, M.gap);              /* occlusion band at the back of the tread, under the riser above */
+      seg(i*t, i*t + 0.05, y1, y1 + r - 0.12, 0.25, w - 0.25, M.riser);                 /* riser */
+    }
+    /* stringers: one sloped steel plate each side, following the nosing line */
+    const run = n*t, drop = n*r, len = Math.hypot(run, drop), ang = Math.atan2(drop, run);
+    [[0, 0.2], [w - 0.2, w]].forEach(([c0, c1]) => { const g = new THREE.BoxGeometry(c1 - c0, 1.0, len); 
+      const mesh = new THREE.Mesh(g, M.steel); mesh.castShadow = mesh.receiveShadow = true;
+      const midA = run/2, midY = f.start[1] - drop/2 - 0.55; const p = P(midA, midY, (c0 + c1)/2);
+      mesh.position.set(...p); if (ax === 'z') mesh.rotation.x = s*ang; else { mesh.rotation.y = Math.PI/2; mesh.rotation.z = -s*ang; } scene.add(mesh); });
+  });
+  const sphere = (p, rad) => { const o = new THREE.Mesh(new THREE.SphereGeometry(rad, 16, 12), M.pipe); o.position.set(...p); o.userData.rail = true; scene.add(o); };
+  /* rails: tubes along the polyline, welded elbows, and posts that stand on whatever surface is actually below them (raycast) */
+  const solids = scene.children.filter(o => o.isMesh);
+  const ray = new THREE.Raycaster();
+  const groundAt = (x, y, z) => { ray.set(new THREE.Vector3(x, y - 0.02, z), new THREE.Vector3(0, -1, 0)); const h = ray.intersectObjects(solids, false); return h.length ? h[0].point.y : null; };
+  (spec.rails || []).forEach(rl => { const pts = rl.points, rad = rl.radius || 0.07, off = rl.postOffset || [0, 0];
+    for (let i = 0; i < pts.length - 1; i++) tube(pts[i], pts[i+1], rad, M.pipe);
+    pts.forEach(p => sphere(p, rad));
+    if (rl.posts !== false){
+      const postAt = p => { const x = p[0] + off[0], z = p[2] + off[1]; const g = groundAt(x, p[1], z); const bottom = g ?? (p[1] - (rl.postHeight || 3));
+        tube([x, p[1], z], [x, bottom, z], rad*0.9, M.pipe); if (p[0] !== x || p[2] !== z) tube(p, [x, p[1], z], rad, M.pipe);
+        const b = new THREE.BoxGeometry(0.5, 0.05, 0.5); b.translate(x, bottom + 0.025, z); add(b, M.plateD).userData.rail = true; };
+      pts.forEach(postAt);
+      const every = rl.postEvery || 3.2;
+      for (let i = 0; i < pts.length - 1; i++){ const A = new THREE.Vector3(...pts[i]), B = new THREE.Vector3(...pts[i+1]), len = A.distanceTo(B), k = Math.floor(len/every);
+        for (let j = 1; j <= k; j++){ const p = A.clone().lerp(B, j/(k+1)); if (p.distanceTo(B) > 0.8) postAt([p.x, p.y, p.z]); } } } });
+  /* lighting: caged bulbs as warm point lights + low ambient + cool fill at depth */
+  scene.add(new THREE.AmbientLight('#3a2e22', 0.5));
+  (spec.render?.lights || [{pos:[1.4, 6.0, -0.5], i:150}, {pos:[8.0, 6.2, -3.0], i:150}, {pos:[0.9, 2.0, 0.8], i:140}, {pos:[2.0, -1.5, -12.5], i:80}, {pos:[7.4, -2.2, -6.5], i:150}, {pos:[4.75, 0.5, -15.0], i:50}]).forEach(l => {
+    const pl = new THREE.PointLight(l.color || '#ffb46a', l.i, 60, 2); pl.position.set(...l.pos); pl.castShadow = true; pl.shadow.mapSize.set(1024, 1024); pl.shadow.bias = -0.002; scene.add(pl);
+    });
+  const fill = new THREE.PointLight('#5f7aa8', 60, 40, 2); fill.position.set(...(spec.render?.fill || [6, -8, -6])); scene.add(fill);
+  if (q.get('mask')){ scene.background = new THREE.Color('#000000'); renderer.toneMapping = THREE.NoToneMapping;
+    const rails = q.get('mask') === 'rails';
+    scene.traverse(o => { if (o.isMesh) o.material = new THREE.MeshBasicMaterial({color: (rails ? o.userData.rail : !o.userData.wall) ? '#ffffff' : '#000000'}); }); }
+  renderer.render(scene, cam); window.__ready = true;
+})();
+</script></body></html>
