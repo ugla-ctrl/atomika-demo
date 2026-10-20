@@ -818,13 +818,13 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
    photos are loading, or always with ?3d. */
 const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
 const PHOTOS = {0:'01-roswell', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
-const CLIPS = [];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
+const CLIPS = [4];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
 const plates = {}, clips = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0};
     img.onload = () => { pl.ready = true; }; img.src = 'stations/' + PHOTOS[k] + '.jpg'; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + '.mp4'; const c = {v, ready:false};
+    v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
 }
 /* fetch the clip that leaves the current station, so Next can play it without waiting */
@@ -835,18 +835,19 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   const c = to === from + 1 ? clips[from] : null, useClip = !!(c && c.ready && !reduce);
   tr = {from, to, t0:performance.now(), clip: useClip ? c : null};
   if (useClip){ c.v.currentTime = 0; c.v.play().catch(() => { tr.clip = null; }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000); }
-  else tr.dur = reduce ? 350 : 1900;
+  else tr.dur = reduce ? 350 : 3600; /* unhurried: a slow push out of one photo and a slow settle into the next */
   return tr.dur; }
 function updatePlates(now){
   if (!PHOTO_MODE){ photoCover = false; return; }
   const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
   const p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
-  if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; warmClip(stop); }
+  if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; }
+  if (!tr) warmClip(stop);
   let cover = false;
   for (const k in plates){ const pl = plates[k], i = +k; let a = 0, sc = 1, tf = '';
     if (tr && !tr.clip){
-      if (i === tr.from){ a = 1 - smooth(0.05, 0.62, p); sc = 1 + 0.14*smooth(0, 1, p); }
-      else if (i === tr.to){ a = smooth(0.38, 1, p); sc = 1.12 - 0.12*smooth(0.38, 1, p); }
+      if (i === tr.from){ a = 1 - smooth(0.1, 0.7, p); sc = 1 + 0.18*smooth(0, 1, p); }
+      else if (i === tr.to){ a = smooth(0.3, 0.9, p); sc = 1.14 - 0.14*smooth(0.3, 1, p); }
     } else if (!tr && i === stop){ a = 1; sc = reduce ? 1 : 1 + Math.min(1, (now - arrivedAt)/24000)*0.035; tf = pan(yaw/1.1, pitch/0.7); }
     if (a > 0 && !pl.ready) a = 0;
     if (a >= 0.999) cover = true;
