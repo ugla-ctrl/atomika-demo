@@ -908,7 +908,7 @@ function updatePlates(now){
     else if (tr && i === tr.from && l.ready && !tr.pending) o = 1 - smooth(0, Math.min(0.4, (tr.fadeMs || 1400)/(tr.clip ? Math.max(1000, (tr.clip.v.duration || 4)*1000) : tr.dur)), p);
     else if (tr && i === tr.to && !tr.clip && l.ready && !tr.pending) o = smooth(0.2, 0.85, p);
     if (o > 0.001){ if (l.v.paused) l.v.play().catch(() => {}); const t = (now - arrivedAt)/1000;
-      l.v.style.transform = reduce ? '' : 'scale(' + (1.005 + 0.012*(1 - Math.cos(t/6))).toFixed(4) + ')'; if (o >= 0.999) cover = true; }
+      l.v.style.transform = ''; if (o >= 0.999) cover = true; }   /* no per-frame scaling on video: resampling a moving scale shimmers */
     else { if (!l.v.paused) l.v.pause(); l.armed = false; }
     l.v.style.opacity = o.toFixed(3); }
   photoCover = cover; canvas.style.opacity = cover ? '0' : '1'; }
