@@ -1,6 +1,7 @@
 # Compositing photoreal plates into an interactive site
 
-## The plate pattern
+## The plate pattern (superseded: see "Photographic navigation" below)
+This was the first version, and people disliked it: the 3D showed during every move. Use it only when there is no time to film transitions.
 Keep the 3D or interactive build as the camera rig and the transitions. Layer a full-bleed `<img>` per station between the canvas and the labels/UI:
 
 - On arrival (the camera animation finishes), fade the station's plate in (about 1 s).
@@ -34,6 +35,18 @@ function updatePlates(now){ const dt = plateLast ? Math.min(0.1, (now - plateLas
     if (pl.a > 0 && !reduceMotion){ const z = 1 + Math.min(1, (now - pl.t0)/24000)*0.035;
       pl.img.style.transform = `translate(${(-yaw*3).toFixed(2)}%,${(pitch*3).toFixed(2)}%) scale(${z.toFixed(4)})`; } } }
 ```
+
+## Photographic navigation
+State to keep: `tr = {from, to, t0, dur, clip, fadeIn, pending}`, plus a `plates` map (img, ready) and a `clips` map (video, ready).
+- **`go(i)`:** call `photoTransition(stop, i)` and use its duration for the camera animation, so readouts and labels stay in sync.
+- **`photoTransition`:** for a forward move, use the clip that ends at the destination (`clips[to-1]`). If it's loaded, start it now; `fadeIn` is true when the jump is more than one step. If it isn't loaded, call `warmClip(to-1)` and hold on the current plate (`pending`) for up to 3 s. Otherwise use the dissolve.
+- **Each frame:**
+  - Resting: the current plate at opacity 1 with drift and drag pan.
+  - Dissolve (`p` = progress): plate A fades out and pushes in (opacity `1 - smooth(0.1, 0.7, p)`, scale up to 1.18); plate B fades in from scale 1.14 (opacity `smooth(0.3, 0.9, p)`).
+  - Clip: the video at opacity 1, or fading in over about 1.4 s if `fadeIn`.
+  - Canvas: hide it (`opacity: 0`, which keeps pointer events) and skip `renderer.render` whenever plates or a clip cover the view. Treat the mid-dissolve state as covered as long as both plates are loaded.
+- **Loading:** photos load on demand (current station, its neighbors, and the target on navigation). Clips preload under `(pointer:fine)`; otherwise only the clip leaving the current station.
+- **Audio:** `preload="none"` on background music, so it doesn't download before the tap that starts it.
 
 ## Real-people cutouts in the 3D scene (three.js)
 ```js

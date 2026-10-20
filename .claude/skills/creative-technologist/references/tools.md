@@ -27,6 +27,10 @@ Video (image2video): `veo3-1` 120+ (lite tier; "fast"/"normal" cost more), `klin
 - Bake-off result for "add real people to this frame": GPT Image 2.5 kept the exact framing and gave candid, documentary people. Nano Banana Pro gave larger, more posed people and moved the camera. Use GPT 2.5 for plates that must line up with the site, and Nano Banana Pro for people lineups and cutouts.
 - Output URLs on `cdn.openart.ai` are plain (unsigned) on paid plans; download them anyway.
 
+- Veo 3.1 image2video (`mode: lite`, `generateAudio: false`): 4 s at 1080p = 120 credits, 8 s at 1080p = 240, **8 s at 720p = 160**. Start and end frames both work on lite. **Only about 3 video jobs run at once**; extra submissions fail with `PARALLEL_LIMIT_EXCEEDED` and aren't charged. Clips take about 2–10 minutes.
+- An existing OpenArt output can be used as a frame directly: pass `openart_upload_metadata_get(mediaUrl=<output url>)`'s `visualReference`. No re-upload needed.
+- Headless test Chromium usually has **no H.264**; ship a WebM too, or the clips silently won't play in tests or some Linux browsers.
+
 ## Which to use
 - **Bake-off first:** one view, two or three models, the same prompt; pick by people quality and framing fidelity.
 - **ElevenLabs gpt-image-2.5-sunburst:** best at holding the exact layout of a reference.

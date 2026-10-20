@@ -48,8 +48,12 @@ Read `references/prompting.md`. It has the template, a people/wardrobe/props che
 ### 5. Generate, compare, pick
 Generate 2–4 variations per view. Build a contact sheet with the reference frame in the top-left (`scripts/contact_sheet.py`) and look at it before choosing. Check: framing still matches; people at correct scale and anatomy (hands, faces, crowd duplication); era-correct details; brand colors still read (accent lights, signage). Reject anything with garbled text, melted faces or extra limbs. That costs less than shipping it.
 
-### 6. Composite into the site
-Read `references/site-integration.md` for the plate system: the 3D flight stays live between stations, the view dissolves into the photo on arrival, a slow drift keeps it alive, and dragging fades back to the interactive 3D. It also covers web-sizing the images, swapping the share image and keeping labels aligned.
+### 6. Composite into the site: photographic end to end
+Read `references/site-integration.md`. The rule people care about most: **once photoreal plates exist, the CGI layer should never show**, not during navigation, not mid-dissolve and not when dragging. Seeing the 3D model between photos breaks the illusion more than anything else. So:
+- **At a station:** show its plate, with a slow drift; dragging pans the photo.
+- **Moving between stations:** play a filmed transition clip (step 6c). Without a clip, use a slow camera-push dissolve from photo to photo, roughly 3–4 s; people find fast transitions cheap.
+- **Jumping several stations:** dissolve into the destination's arrival clip, so every arrival is filmed. Going back uses the dissolve, because walking footage played in reverse shows people walking backwards.
+- **Keep the 3D running underneath** as the camera rig: it still drives the path, depth or altitude readouts and label positions. But stop drawing it while photos cover the view, which also saves phones a lot of GPU. Keep a `?3d` flag for debugging.
 
 ### 6b. Replace toy figures in the live 3D with real people
 Hand-built people (cylinders, spheres, low-poly rigs) read as toys or LEGO the moment someone notices them, and no shading fixes that. Swap them for photographic cutouts:
@@ -57,6 +61,12 @@ Hand-built people (cylinders, spheres, low-poly rigs) read as toys or LEGO the m
 2. Run `scripts/key_cutouts.py lineup.png people/ crew` to get one transparent WebP per person.
 3. In the scene, place each as an upright plane (origin at the feet, height about 5.5–6 ft, width from the image aspect) with `alphaTest`, turn it each frame to face the camera around the vertical axis, and add a soft dark ellipse under the feet for contact. `references/site-integration.md` has the code.
 Keep them standing in plausible spots (at consoles, looking at a wall). A sliding still photo reads worse than a still person.
+
+### 6c. Film the transitions
+For each step A→B, generate an image-to-video clip with **first frame = A's plate and last frame = B's plate** (OpenArt `veo3-1` image2video takes `startFrame` and `endFrame`). The prompt describes one continuous, slow camera move: a drone descent, walking through a door, rising up a shaft. Use 8 s; 720p is fine for motion and costs about a third less than 1080p. Then:
+- Run `scripts/prep_clip.sh source.mp4 transitions/AA-BB 1.15` to get H.264 MP4 plus VP9 WebM and a frame strip. The 1.15 stretch slows the move a little, using motion interpolation so it doesn't stutter.
+- Review the frame strip. Veo sometimes cross-dissolves instead of moving, or invents extras like a rainbow laser fan. Reject clips whose ends don't match the plates.
+- In the page, pick MP4 or WebM with `canPlayType`, keep videos `muted` and `playsinline`, preload only the clip leaving the current station on touch devices (all clips on mouse-driven ones), and on a jump wait up to about 3 s for the clip before falling back to the dissolve.
 
 ### 7. Save everything
 Commit the reference frames, every variation, the picks, the contact sheets and the exact prompts to a `concepts/` folder with a README and status table. Generations are expensive and URLs from these services expire within hours, so download immediately.
