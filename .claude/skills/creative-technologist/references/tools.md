@@ -31,6 +31,15 @@ Video (image2video): `veo3-1` 120+ (lite tier; "fast"/"normal" cost more), `klin
 - An existing OpenArt output can be used as a frame directly: pass `openart_upload_metadata_get(mediaUrl=<output url>)`'s `visualReference`. No re-upload needed.
 - Headless test Chromium usually has **no H.264**; ship a WebM too, or the clips silently won't play in tests or some Linux browsers.
 
+## Budget tiers (OpenArt, October 2026; re-check with `openart_model_cost`)
+| Job | Cheap | Standard | Premium |
+|---|---|---|---|
+| Still with people, image2image 2K | Kling 3 Omni 10, Seedream 4.5 15 | Nano Banana Pro 40, GPT Image 2.5 medium 47 | GPT Image 2.5 high 172 |
+| Move between views, start/end frames | PixVerse V6 50 (540p, 5 s), 70 (720p) | Veo 3.1 lite 4 s 720p 80 | Veo 3.1 lite 8 s 720p 160; 1080p 240 |
+On a small budget, fit everything at Standard or Cheap and say what Premium would buy. On this project, GPT 2.5 high was worth it for framing fidelity on 11 hero plates, because the budget allowed it.
+- **ElevenLabs:** budget it separately. Its image and video credits are a different pool, and sound (ambience, music, voice-over) is often the best use of it.
+- **Readable text:** keep it out of prompts (no "TRACK 3" signs). Models garble lettering; add real signage in the page instead.
+
 ## Which to use
 - **Bake-off first:** one view, two or three models, the same prompt; pick by people quality and framing fidelity.
 - **ElevenLabs gpt-image-2.5-sunburst:** best at holding the exact layout of a reference.

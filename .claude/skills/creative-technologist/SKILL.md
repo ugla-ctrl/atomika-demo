@@ -34,6 +34,11 @@ Read `references/tools.md` for connector mechanics, costs and gotchas (uploads, 
 - **ElevenLabs Creative**: `creative_edit_image` with `gpt-image-2.5-sunburst`, 4 variations per call, strong at keeping framing. Plans have a hard credit cap, so budget before batching.
 - **Video** (image→video from a chosen plate): Veo 3.1, Kling 3, Seedance 2 on OpenArt. These cost an order of magnitude more than stills, so confirm the budget first.
 
+**Fit the whole request into the budget before cutting scope.** If someone asks for stills plus moves between every view, plan all of it on cheaper tiers first, then offer upgrades. Don't default to the most expensive setting that worked on another project and then drop most of what they asked for. Price tiers differ by up to 4×:
+- **Stills:** GPT Image 2.5 at medium quality, or Nano Banana Pro, cost about 40–47 credits each, against 172 for GPT 2.5 at high quality.
+- **Clips:** PixVerse V6 at 50–70 credits or Veo lite 4 s at 80, against Veo 8 s at 160.
+Check the real balance with `openart_account_get`, and plan for both the balance the user named and the one the account actually shows if they differ.
+
 When unsure which model wins, spend a little on a bake-off: one station, two or three models, the same prompt. Then run the batch on the winner.
 
 ### 4. Write "human world" prompts
