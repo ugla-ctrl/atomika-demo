@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Blockout</title>
+<style>html,body{margin:0;height:100%;background:#fff;overflow:hidden}canvas{display:block}</style></head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* Architectural blockout renderer. Loads a JSON spec (?spec=path.json) and draws clean, matte geometry with dark edge lines,
+   so an image model gets an unambiguous picture of how the space is built. Units are feet; +y is up.
+   Spec:
+   { "camera": {"pos":[x,y,z], "look":[x,y,z], "fov":45 (vertical degrees)},
+     "boxes":   [{"min":[x,y,z], "max":[x,y,z], "shade":0.85}],           // walls, slabs, landings, beams, columns
+     "flights": [{"start":[x,y,z], "dir":"+x|-x|+z|-z", "width":4, "rise":10, "riser":0.6, "tread":0.95, "shade":0.7}],
+                // start = the top nosing at the left edge looking down the flight; steps descend along dir by `rise` feet
+     "rails":   [{"points":[[x,y,z],...], "posts":true}],               // handrail centerline polylines, posts dropped to the floor below each point
+     "labels":  false }
+   window.__ready is set once rendered. */
+(async () => {
+  const q = new URLSearchParams(location.search), spec = await (await fetch(q.get('spec'))).json();
+  const W = +(q.get('w') || 1600), H = +(q.get('h') || 900);
+  const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true}); renderer.setSize(W, H); document.body.appendChild(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#ffffff');
+  const cam = new THREE.PerspectiveCamera(spec.camera.fov || 45, W/H, 0.1, 2000); cam.position.set(...spec.camera.pos); cam.lookAt(new THREE.Vector3(...spec.camera.look));
+  scene.add(new THREE.HemisphereLight('#ffffff', '#555555', 0.75)); const d = new THREE.DirectionalLight('#ffffff', 0.6); d.position.set(-0.5, 1, 0.6); scene.add(d); /* light from above-left so treads, risers and walls separate */
+  const edgeMat = new THREE.LineBasicMaterial({color:'#111111'});
+  const solid = (geo, shade) => { const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({color:new THREE.Color(shade, shade, shade), polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1}));
+    scene.add(m); const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), edgeMat); e.position.copy(m.position); e.quaternion.copy(m.quaternion); scene.add(e); return m; };
+  const box = (min, max, shade) => { const g = new THREE.BoxGeometry(max[0]-min[0], max[1]-min[1], max[2]-min[2]); g.translate((min[0]+max[0])/2, (min[1]+max[1])/2, (min[2]+max[2])/2); solid(g, shade ?? 0.85); };
+  (spec.boxes || []).forEach(b => box(b.min, b.max, b.shade));
+  (spec.flights || []).forEach(f => {
+    const n = Math.max(1, Math.round(f.rise / (f.riser || 0.6))), r = f.rise / n, t = f.tread || 0.95, w = f.width || 4;
+    const s = f.dir[0] === '+' ? 1 : -1, ax = f.dir[1];
+    const P = (along, y, across) => ax === 'x' ? [f.start[0] + s*along, y, f.start[2] + across] : [f.start[0] + across, y, f.start[2] + s*along];
+    const seg = (a0, a1, y0, y1, c0, c1, shade) => { const p = P(a0, y0, c0), q = P(a1, y1, c1);
+      box([Math.min(p[0], q[0]), Math.min(p[1], q[1]), Math.min(p[2], q[2])], [Math.max(p[0], q[0]), Math.max(p[1], q[1]), Math.max(p[2], q[2])], shade); };
+    for (let i = 0; i < n; i++){ const y1 = f.start[1] - (i + 1)*r;     // each tread is one riser below the one before
+      seg(i*t, (i + 1)*t, y1 - 0.15, y1, 0, w, f.shade ?? 0.75);        // tread
+      seg(i*t, i*t + 0.06, y1, y1 + r, 0.25, w - 0.25, 0.35);           // riser (dark, so each step reads)
+      seg(i*t, (i + 1)*t, y1 - 0.9, y1 - 0.15, 0, 0.25, 0.4);           // stringers, both sides
+      seg(i*t, (i + 1)*t, y1 - 0.9, y1 - 0.15, w - 0.25, w, 0.4); }
+  });
+  const tube = (a, b, rad) => { const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), len = A.distanceTo(B); if (len < 1e-3) return;
+    const g = new THREE.CylinderGeometry(rad, rad, len, 10); const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({color:'#333333'}));
+    m.position.copy(A).add(B).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), B.clone().sub(A).normalize()); scene.add(m); };
+  (spec.rails || []).forEach(r => { for (let i = 0; i < r.points.length - 1; i++) tube(r.points[i], r.points[i+1], 0.08);
+    if (r.posts !== false) r.points.forEach(p => tube(p, [p[0], p[1] - (r.postHeight || 3), p[2]], 0.07)); });
+  renderer.render(scene, cam); window.__ready = true;
+})();
+</script></body></html>
