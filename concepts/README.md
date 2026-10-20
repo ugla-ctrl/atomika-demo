@@ -24,6 +24,10 @@ The people in the live 3D (crew on Level −1, visitors on Level −2) are real-
 
 The people-pass prompts follow the template in `.claude/skills/creative-technologist/references/prompting.md` and name the people, their actions, wardrobe, props, light sources and camera for each station. The prompts below are the first (empty-scene) pass.
 
+## Transitions
+
+`transitions/` holds a filmed clip for every step of the journey (10 clips). Each was made on OpenArt with Veo 3.1 image-to-video, lite tier, 8 s at 720p, no audio (160 credits each; the Entry to Stair Shaft test was 4 s at 1080p, 120 credits). The first frame is pinned to the station photo you leave and the last frame to the one you arrive at, so there is no jump at either end. Each was then stretched 1.15× with motion interpolation (1.75× for the 4 s test) and encoded as H.264 MP4 and VP9 WebM with `.claude/skills/creative-technologist/scripts/prep_clip.sh`. Originals are in `transitions/` here.
+
 ## Prompts
 
 Every prompt is sent with that station's `reference/` frame wired in as the image to edit.

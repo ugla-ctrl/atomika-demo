@@ -820,7 +820,7 @@ canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointerc
    photos are loading, or always with ?3d. */
 const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
 const PHOTOS = {0:'01-roswell', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
-const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
+const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
 const plates = {}, clips = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
