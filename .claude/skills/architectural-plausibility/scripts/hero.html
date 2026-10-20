@@ -32,11 +32,12 @@
     nosing:  new THREE.MeshStandardMaterial({color:'#d8d2c4', metalness:0.6, roughness:0.35}),
     gap:     new THREE.MeshStandardMaterial({color:'#1a1a1d', metalness:0, roughness:1, transparent:true, opacity:0.75})
   };
-  const add = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; scene.add(o); return o; };
+  let ROLE = 'misc';
+  const add = (g, m) => { const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; o.userData.role = ROLE; scene.add(o); return o; };
   const box = (min, max, m) => { const sx = max[0]-min[0], sy = max[1]-min[1], sz = max[2]-min[2]; const g = new THREE.BoxGeometry(sx, sy, sz); g.translate((min[0]+max[0])/2, (min[1]+max[1])/2, (min[2]+max[2])/2); return add(g, m); };
   /* boxes: role by shade convention from the spec: walls (>=0.8) concrete, landings plate, floors dark concrete */
   (spec.boxes || []).forEach(b => { const sx = b.max[0]-b.min[0], sz = b.max[2]-b.min[2], sy = b.max[1]-b.min[1];
-    const role = b.role || (b.shade >= 0.8 ? 'wall' : b.shade <= 0.5 ? 'floor' : 'landing');
+    const role = b.role || (b.shade >= 0.8 ? 'wall' : b.shade <= 0.5 ? 'floor' : 'landing'); ROLE = role + (b.min[1] >= -0.7 ? '-upper' : '-mid');
     if (role === 'wall') box(b.min, b.max, tile(M.wall, Math.max(sx, sz)/8, sy/8)).userData.wall = true;
     else if (role === 'floor') box(b.min, b.max, tile(M.floor, sx/6, sz/6));
     else { box(b.min, b.max, tile(M.plate, sx/1.4, sz/1.4)); /* landing: plate top with a steel edge below */
@@ -44,7 +45,7 @@
   const tube = (a, b, rad, m) => { const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), len = A.distanceTo(B); if (len < 1e-3) return;
     const g = new THREE.CylinderGeometry(rad, rad, len, 24); const o = new THREE.Mesh(g, m); o.castShadow = true; o.userData.rail = true;
     o.position.copy(A).add(B).multiplyScalar(0.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), B.clone().sub(A).normalize()); scene.add(o); return o; };
-  (spec.flights || []).forEach(f => {
+  (spec.flights || []).forEach((f, fi) => { ROLE = 'flight' + (fi+1);
     const n = Math.max(1, Math.round(f.rise/(f.riser || 0.6))), r = f.rise/n, t = f.tread || 0.95, w = f.width || 4;
     const s = f.dir[0] === '+' ? 1 : -1, ax = f.dir[1];
     const P = (along, y, across) => ax === 'x' ? [f.start[0] + s*along, y, f.start[2] + across] : [f.start[0] + across, y, f.start[2] + s*along];
@@ -86,8 +87,9 @@
     });
   const fill = new THREE.PointLight('#5f7aa8', 60, 40, 2); fill.position.set(...(spec.render?.fill || [6, -8, -6])); scene.add(fill);
   if (q.get('mask')){ scene.background = new THREE.Color('#000000'); renderer.toneMapping = THREE.NoToneMapping;
-    const rails = q.get('mask') === 'rails';
-    scene.traverse(o => { if (o.isMesh) o.material = new THREE.MeshBasicMaterial({color: (rails ? o.userData.rail : !o.userData.wall) ? '#ffffff' : '#000000'}); }); }
+    const rails = q.get('mask') === 'rails', ids = q.get('mask') === 'ids';
+    const idc = {'landing-upper':'#ff2020','landing-mid':'#ff9900','floor-mid':'#2040ff','floor-upper':'#2040ff','flight1':'#20c020','flight2':'#20e0e0','wall-upper':'#000000','wall-mid':'#000000'};
+    scene.traverse(o => { if (o.isMesh) o.material = new THREE.MeshBasicMaterial({color: ids ? (o.userData.rail ? '#ffffff' : (idc[o.userData.role] || '#808080')) : (rails ? o.userData.rail : !o.userData.wall) ? '#ffffff' : '#000000'}); }); }
   renderer.render(scene, cam); window.__ready = true;
 })();
 </script></body></html>
