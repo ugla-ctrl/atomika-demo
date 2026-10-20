@@ -18,6 +18,9 @@ CAMERA: [body and lens, height, aperture], [motion blur on moving people], [grai
 No readable text, no logos, no watermark, no CGI or 3D-render look, no plastic skin.
 ```
 
+## Keep the real place real
+Only describe what's in the reference frame. For a real site, add "keep the architecture, background and skyline exactly as in the render; do not add or move buildings or landmarks". Don't write in famous landmarks for atmosphere: if the bridge isn't in the render, it isn't in the prompt.
+
 ## Genres that read as real
 - **Documentary / photojournalism**: candid, slightly imperfect framing, available light.
 - **Behind-the-scenes production still**: crew, gear, cables, work lights.

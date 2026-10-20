@@ -37,7 +37,7 @@ Read `references/tools.md` for connector mechanics, costs and gotchas (uploads, 
 **Fit the whole request into the budget before cutting scope.** If someone asks for stills plus moves between every view, plan all of it on cheaper tiers first, then offer upgrades. Don't default to the most expensive setting that worked on another project and then drop most of what they asked for. Price tiers differ by up to 4×:
 - **Stills:** GPT Image 2.5 at medium quality, or Nano Banana Pro, cost about 40–47 credits each, against 172 for GPT 2.5 at high quality.
 - **Clips:** PixVerse V6 at 50–70 credits or Veo lite 4 s at 80, against Veo 8 s at 160.
-Check the real balance with `openart_account_get`, and plan for both the balance the user named and the one the account actually shows if they differ.
+Check the real balance with `openart_account_get`, and plan for both the balance the user named and the one the account actually shows if they differ. At every budget level, drop to the next cheaper tier (down to Kling 3 Omni stills at 10 credits) before dropping any part of the request, and say what the cheaper tier costs in quality.
 
 When unsure which model wins, spend a little on a bake-off: one station, two or three models, the same prompt. Then run the batch on the winner.
 
@@ -48,7 +48,8 @@ Read `references/prompting.md`. It has the template, a people/wardrobe/props che
 - cast specific people with specific actions, wardrobe and era;
 - add lived-in detail and motivated light;
 - name camera, lens, film or sensor look and imperfections;
-- end with exclusions (no text, no watermark, no CGI look).
+- end with exclusions (no text, no watermark, no CGI look);
+- never name scenery, landmarks or views that aren't visible in the reference frame. Say "keep the background exactly as in the render" instead. An invented bridge or skyline in a pitch for a real place costs credibility.
 
 ### 5. Generate, compare, pick
 Generate 2–4 variations per view. Build a contact sheet with the reference frame in the top-left (`scripts/contact_sheet.py`) and look at it before choosing. Check: framing still matches; people at correct scale and anatomy (hands, faces, crowd duplication); era-correct details; brand colors still read (accent lights, signage). Reject anything with garbled text, melted faces or extra limbs. That costs less than shipping it.
