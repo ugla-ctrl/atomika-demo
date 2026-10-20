@@ -44,7 +44,7 @@
 html,body{height:100%;background:var(--bg);color:var(--fg);overflow:hidden}
 body{font-family:var(--display);-webkit-font-smoothing:antialiased}
 #stage{position:fixed;inset:0;background:var(--bg)}
-#c{display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none}
+#c{display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline:none;transition:opacity .4s}
 #c.dragging{cursor:grabbing}
 .top{position:fixed;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding-top:calc(16px + env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
@@ -87,6 +87,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 /* photoreal station plates: shown on arrival, dissolve back to the live 3D view on drag or departure */
 #photos{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;background:transparent}
 #photos img{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:0;will-change:opacity,transform}
+#photos video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;background:#000}
 @media (prefers-reduced-motion:reduce){#photos img{inset:0;width:100%;height:100%}}
 .tag{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%);white-space:nowrap;
   font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--cyan);background:rgba(0,0,0,.72);border:1px solid rgba(1,207,254,.55);border-radius:999px;padding:6px 10px;cursor:default;transition:opacity .25s}
@@ -788,7 +789,8 @@ function go(i){
   const far = (stop === 0 || i === 0) && Math.abs(i - stop) >= 1;
   const dur = reduce ? 350 : (far ? 5200 : Math.min(7000, 1300 + 520*Math.abs(to - from)));
   modeOrbit = !!STOPS[stop].orbit;
-  anim = {from, to, t0:performance.now(), dur, y0:yaw, p0:pitch};
+  const pd = photoTransition(stop, i);
+  anim = {from, to, t0:performance.now(), dur: pd || dur, y0:yaw, p0:pitch};
   stop = i; renderCard();
 }
 $('next').addEventListener('click', () => go(stop === STOPS.length-1 ? 0 : stop+1));
@@ -809,21 +811,50 @@ canvas.addEventListener('pointermove', e => { if (!drag || anim) return; const d
 const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
-/* ---------- photoreal station plates (concepts/README.md has how they were made) ---------- */
+/* ---------- photoreal navigation (concepts/README.md has how the plates were made) ----------
+   Every station is a photograph with real people in it. Moving between stations plays a filmed transition clip when there is one
+   (transitions/<from>-<to>.mp4, first frame = this station, last frame = the next), and otherwise a camera-push dissolve from photo
+   to photo. Dragging pans the photo. The 3D scene still drives the path, depth readout and label positions, but is only drawn while
+   photos are loading, or always with ?3d. */
+const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
 const PHOTOS = {0:'01-roswell', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
-const plates = {};
-if (!/[?&]3d\b/.test(location.search)) Object.keys(PHOTOS).forEach(k => { /* ?3d shows the live 3D only */ const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, a:0, t0:0};
-  img.onload = () => { pl.ready = true; }; img.src = 'stations/' + PHOTOS[k] + '.jpg'; $('photos').appendChild(img); plates[k] = pl; });
-let plateLast = 0;
-function updatePlates(now){ const dt = plateLast ? Math.min(0.1, (now - plateLast)/1000) : 0; plateLast = now;
-  const look = Math.min(1, Math.max(Math.abs(yaw)/0.3, Math.abs(pitch)/0.25));
-  for (const k in plates){ const pl = plates[k], here = +k === stop && !anim && pl.ready;
-    const target = here ? 1 - smooth(0.35, 1, look) : 0;
-    if (here && pl.a === 0) pl.t0 = now;
-    const rate = target > pl.a ? 1.1 : 2.6; pl.a += Math.sign(target - pl.a) * Math.min(Math.abs(target - pl.a), dt*rate);
-    if (pl.a < 0.002 && target === 0) pl.a = 0;
-    pl.img.style.opacity = pl.a.toFixed(3);
-    if (pl.a > 0 && !reduce){ const z = 1 + Math.min(1, (now - pl.t0)/24000)*0.035; pl.img.style.transform = 'translate(' + (-yaw*3).toFixed(2) + '%,' + (pitch*3).toFixed(2) + '%) scale(' + z.toFixed(4) + ')'; } } }
+const CLIPS = [];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
+const plates = {}, clips = {}, pad2 = n => String(n).padStart(2, '0');
+if (PHOTO_MODE){
+  Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0};
+    img.onload = () => { pl.ready = true; }; img.src = 'stations/' + PHOTOS[k] + '.jpg'; $('photos').appendChild(img); plates[k] = pl; });
+  CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+    v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + '.mp4'; const c = {v, ready:false};
+    v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
+}
+/* fetch the clip that leaves the current station, so Next can play it without waiting */
+function warmClip(i){ const c = clips[i]; if (c && !c.v.src){ c.v.src = c.v.dataset.src; c.v.preload = 'auto'; c.v.load(); } }
+let tr = null, arrivedAt = 0, photoCover = false;
+/* called by go(): returns the transition length in ms in photo mode */
+function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
+  const c = to === from + 1 ? clips[from] : null, useClip = !!(c && c.ready && !reduce);
+  tr = {from, to, t0:performance.now(), clip: useClip ? c : null};
+  if (useClip){ c.v.currentTime = 0; c.v.play().catch(() => { tr.clip = null; }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000); }
+  else tr.dur = reduce ? 350 : 1900;
+  return tr.dur; }
+function updatePlates(now){
+  if (!PHOTO_MODE){ photoCover = false; return; }
+  const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
+  const p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
+  if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; warmClip(stop); }
+  let cover = false;
+  for (const k in plates){ const pl = plates[k], i = +k; let a = 0, sc = 1, tf = '';
+    if (tr && !tr.clip){
+      if (i === tr.from){ a = 1 - smooth(0.05, 0.62, p); sc = 1 + 0.14*smooth(0, 1, p); }
+      else if (i === tr.to){ a = smooth(0.38, 1, p); sc = 1.12 - 0.12*smooth(0.38, 1, p); }
+    } else if (!tr && i === stop){ a = 1; sc = reduce ? 1 : 1 + Math.min(1, (now - arrivedAt)/24000)*0.035; tf = pan(yaw/1.1, pitch/0.7); }
+    if (a > 0 && !pl.ready) a = 0;
+    if (a >= 0.999) cover = true;
+    pl.img.style.opacity = a.toFixed(3); if (a > 0) pl.img.style.transform = tf + ' scale(' + sc.toFixed(4) + ')'; }
+  for (const k in clips){ const on = !!(tr && tr.clip === clips[k]); clips[k].v.style.opacity = on ? '1' : '0'; if (on) cover = true; }
+  /* mid-dissolve both photos are partly transparent: keep the 3D hidden behind them so only photographs show */
+  if (tr && !tr.clip && plates[tr.from] && plates[tr.to] && plates[tr.from].ready && plates[tr.to].ready) cover = true;
+  photoCover = cover; canvas.style.opacity = cover ? '0' : '1'; }
 
 /* ---------- loop ---------- */
 const ease = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
@@ -895,8 +926,8 @@ function frame(now){
   /* eye adaptation: settle to a lower exposure in the lit rooms below grade */
   { const dt = lastF ? Math.min(0.1, (now - lastF)/1000) : 1; lastF = now; const target = camera.position.y < -1.5 ? EXPOSURE_BELOW : EXPOSURE; exposure += (target - exposure)*Math.min(1, dt*2.5);
     if (composer) finalPass.uniforms.exposure.value = exposure; else renderer.toneMappingExposure = exposure; }
-  if (composer){ finalPass.uniforms.time.value = s; composer.render(); } else renderer.render(scene, camera);
-  updatePlates(now); adaptQuality(now);
+  updatePlates(now);
+  if (!photoCover){ if (composer){ finalPass.uniforms.time.value = s; composer.render(); } else renderer.render(scene, camera); adaptQuality(now); }
   requestAnimationFrame(frame);
 }
 /* soundtrack: browsers only allow sound after a tap, so it starts on the first interaction and loops for the whole journey */

@@ -10,7 +10,7 @@ Live at https://demo.atomikafest.com
 - `?station=N` opens straight at station N (1 to 11).
 - `people/` holds real-person cutouts (crew and visitors) that stand in the live 3D in place of modeled figures.
 - `.claude/skills/creative-technologist/` is the Claude Code skill used to make all of this: how to turn a 3D build into human-realistic plates and cutouts with OpenArt or ElevenLabs.
-- `stations/` holds photoreal plates, with real people, for all 11 stations. The camera flies through the 3D scene, and on arrival the view dissolves into the plate; dragging to look around fades back to the live 3D. `?3d` turns the plates off. The plates are AI re-renders of the 3D frames; sources, every variation and the prompts are in `concepts/` (see `concepts/README.md`).
+- `stations/` holds photoreal plates, with real people, for all 11 stations. Navigation is photographic end to end: moving between stations plays a filmed transition clip from `transitions/` when one exists, otherwise a camera-push dissolve from photo to photo; dragging pans the photo. The 3D scene still drives the path, depth readout and label positions but isn't drawn behind the photos. `?3d` shows the 3D scene instead. The plates are AI re-renders of the 3D frames; sources, every variation and the prompts are in `concepts/` (see `concepts/README.md`).
 - `og.png` is the social share image.
 - Hosted on GitHub Pages; `CNAME` sets the custom domain.
 
