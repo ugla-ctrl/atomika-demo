@@ -1,5 +1,5 @@
 {
- "_note": "Switchback (U-turn) stair matching the reference photo. Camera stands on the upper landing (left half, y=0). Flight 1 descends away along the left wall to a full-width mid landing at the far wall (y=-5). Flight 2 turns 180 degrees and comes back toward the camera along the right wall, down to the lower floor (y=-10). One continuous center rail divides the two flights. Feet, +y up, camera at +z.",
+ "_note": "Switchback (U-turn) stair matching the reference photo. Camera stands on the upper landing (left half, y=0). Flight 1 descends away along the left wall to a full-width mid landing at the far wall (y=-5). No exit at the mid landing. Flight 2 turns 180 degrees and comes back toward the camera along the right wall, down to the lower floor (y=-10). One continuous center rail divides the two flights. Feet, +y up, camera at +z.",
  "camera": {
   "pos": [
    2.0,
@@ -91,19 +91,6 @@
     3
    ],
    "shade": 0.45
-  },
-  {
-   "min": [
-    3.2,
-    -5,
-    -16.0
-   ],
-   "max": [
-    6.2,
-    2.0,
-    -15.9
-   ],
-   "shade": 0.12
   }
  ],
  "flights": [
