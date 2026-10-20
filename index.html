@@ -90,6 +90,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 #photos{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;background:transparent}
 #photos img{position:absolute;inset:-7%;width:114%;height:114%;object-fit:cover;opacity:0;will-change:opacity,transform,filter}
 #photos video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;background:#000}
+#photos video[loop]{inset:-7%;width:114%;height:114%;background:transparent;will-change:opacity,transform}
 @media (prefers-reduced-motion:reduce){#photos img{inset:0;width:100%;height:100%}}
 .tag{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%);white-space:nowrap;
   font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--cyan);background:rgba(0,0,0,.72);border:1px solid rgba(1,207,254,.55);border-radius:999px;padding:6px 10px;cursor:default;transition:opacity .25s}
@@ -822,16 +823,21 @@ const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
 const PHOTOS = {0:'01-roswell', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
 const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
 const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current photo: dissolve into them instead of cutting */
-const plates = {}, clips = {}, pad2 = n => String(n).padStart(2, '0');
+const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
+  /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
+  Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+    v.dataset.src = 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const l = {v, ready:false};
+    v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l; });
 }
+function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){ l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load(); } }
 /* fetch the clip that leaves the current station, so Next can play it without waiting */
-if (PHOTO_MODE && matchMedia('(pointer:fine)').matches) setTimeout(() => CLIPS.forEach(i => warmClip(i)), 6000); /* desktop: have every clip ready for jumps */
+if (PHOTO_MODE){ warmLoop(stop); if (matchMedia('(pointer:fine)').matches) setTimeout(() => CLIPS.forEach(i => warmClip(i)), 6000); } /* desktop: have every clip ready for jumps */
 function warmClip(i){ const c = clips[i]; if (c && !c.v.src){ c.v.src = c.v.dataset.src; c.v.preload = 'auto'; c.v.load(); } }
 let tr = null, arrivedAt = 0, photoCover = false;
 /* called by go(): returns the transition length in ms in photo mode */
@@ -840,7 +846,7 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
      a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
   const c = to > from ? clips[to - 1] : null, now = performance.now();
-  tr = {from, to, t0:now, clip:null, fadeIn: to !== from + 1 || !!SOFT_START[to - 1]};
+  tr = {from, to, t0:now, clip:null, fadeIn: true, fadeMs: (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (c && !c.ready && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 3600; return 3000 + 9000; } /* hold briefly while the clip loads */
   startTransition(c && c.ready && !reduce ? c : null, now);
   return tr.dur; }
@@ -858,7 +864,7 @@ function updatePlates(now){
       return; } }
   const p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
   if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; }
-  if (!tr) warmClip(stop);
+  if (!tr){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
   /* photos load on demand: this station and its neighbors */
   [stop - 1, stop, stop + 1].forEach(i => { const pl = plates[i]; if (pl && !pl.img.src) pl.img.src = pl.src; });
   let cover = false;
@@ -869,8 +875,8 @@ function updatePlates(now){
     } else if (!tr && i === stop){ a = 1; const t = (now - arrivedAt)/1000;
       /* alive while resting: a slow breath in scale, a slow wander in position, never a static frame */
       /* a visible, continuous push: 4%..12% over ~20 s, ping-pong, plus a wandering pan of up to ~2.5% */
-      sc = reduce ? 1 : 1.08 + 0.04*Math.sin(t/3.2 - Math.PI/2) + 0.012*Math.sin(t/7.1 + 1.3);
-      const wx = reduce ? 0 : 2.2*Math.sin(t/5.3) + 0.8*Math.sin(t/11 + 0.7), wy = reduce ? 0 : 1.5*Math.sin(t/6.7 + 2.1);
+      sc = reduce ? 1 : 1.06 + 0.02*Math.sin(t/4.5 - Math.PI/2) + 0.008*Math.sin(t/9.1 + 1.3);
+      const wx = reduce ? 0 : 1.2*Math.sin(t/6.3) + 0.5*Math.sin(t/13 + 0.7), wy = reduce ? 0 : 0.8*Math.sin(t/7.7 + 2.1);
       tf = pan(yaw/1.1 + wx/3.5, pitch/0.7 - wy/3.5);
       pl.img.style.filter = reduce ? '' : 'brightness(' + (1 + 0.025*Math.sin(t*7.3) + 0.015*Math.sin(t*2.1 + 0.4)).toFixed(3) + ')'; }
     if (!(!tr && i === stop)) pl.img.style.filter = '';
@@ -880,12 +886,20 @@ function updatePlates(now){
   /* every clip hands over to the arrival photo with a slow cross-fade, so nothing pops in on the last frame */
   const fe = tr && tr.clip ? Math.min(0.4, 2000/tr.dur) : 0, endFade = tr && tr.clip ? smooth(1 - fe, 1, p) : 0;
   if (tr && tr.clip && p > 1 - fe){ const pl = plates[tr.to]; if (pl && pl.ready){ pl.img.style.opacity = '1'; pl.img.style.transform = 'scale(' + (1.04 + 0.03*(1 - smooth(1 - fe, 1, p))).toFixed(4) + ')'; cover = true; } }
-  if (tr && tr.clip && tr.fadeIn){ const f = smooth(0, Math.min(0.4, 1400/tr.dur), p), pl = plates[tr.from];
+  if (tr && tr.clip && tr.fadeIn){ const f = smooth(0, Math.min(0.4, tr.fadeMs/tr.dur), p), pl = plates[tr.from];
     if (pl && pl.ready){ pl.img.style.opacity = (1 - f).toFixed(3); cover = true; } }
-  for (const k in clips){ const on = !!(tr && tr.clip === clips[k]), o = on ? (tr.fadeIn ? smooth(0, Math.min(0.4, 1400/tr.dur), p) : 1)*(1 - endFade) : 0;
+  for (const k in clips){ const on = !!(tr && tr.clip === clips[k]), o = on ? (tr.fadeIn ? smooth(0, Math.min(0.4, tr.fadeMs/tr.dur), p) : 1)*(1 - endFade) : 0;
     clips[k].v.style.opacity = o.toFixed(3); if (o >= 0.999) cover = true; }
   /* mid-dissolve both photos are partly transparent: keep the 3D hidden behind them so only photographs show */
   if (tr && !tr.clip && plates[tr.from] && plates[tr.to] && plates[tr.from].ready && plates[tr.to].ready) cover = true;
+  for (const k in loops){ const l = loops[k], i = +k; let o = 0;
+    if (!tr && i === stop && l.ready) o = Math.min(1, (now - arrivedAt)/700 + 0.4);
+    else if (tr && i === tr.from && l.ready && !tr.pending) o = 1 - smooth(0, Math.min(0.4, (tr.fadeMs || 1400)/tr.dur), p);
+    else if (tr && i === tr.to && tr.clip && l.ready) o = endFade;
+    else if (tr && i === tr.to && !tr.clip && l.ready && !tr.pending) o = smooth(0.2, 0.85, p);
+    if (o > 0.001){ if (l.v.paused) l.v.play().catch(() => {}); const pl = plates[i]; l.v.style.transform = pl && pl.img.style.transform ? pl.img.style.transform : 'scale(1.04)'; if (o >= 0.999) cover = true; }
+    else if (!l.v.paused) l.v.pause();
+    l.v.style.opacity = o.toFixed(3); }
   photoCover = cover; canvas.style.opacity = cover ? '0' : '1'; }
 
 /* ---------- loop ---------- */
