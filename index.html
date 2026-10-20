@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://demo.atomikafest.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="A low-poly render of the Twistflower silo at night, doors open, with laser beams rising into the sky.">
+<meta property="og:image:alt" content="The open doors of the Twistflower silo at night, with laser beams rising into the starry desert sky.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Enter the Silo | ATOMIKA">
 <meta name="twitter:description" content="An interactive descent into the Twistflower missile silo near Roswell, New Mexico.">
@@ -84,6 +84,10 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 .rail button:focus-visible{outline:2px solid var(--cyan)}
 @media (max-width:899px){.rail{display:none}}
 #labels{position:fixed;inset:0;pointer-events:none;z-index:4}
+/* photoreal station plates: shown on arrival, dissolve back to the live 3D view on drag or departure */
+#photos{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;background:transparent}
+#photos img{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;opacity:0;will-change:opacity,transform}
+@media (prefers-reduced-motion:reduce){#photos img{inset:0;width:100%;height:100%}}
 .tag{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%);white-space:nowrap;
   font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--cyan);background:rgba(0,0,0,.72);border:1px solid rgba(1,207,254,.55);border-radius:999px;padding:6px 10px;cursor:default;transition:opacity .25s}
 .tag.go{cursor:pointer;background:var(--cyan);color:#000;border-color:var(--cyan)}
@@ -99,6 +103,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 </head>
 <body>
 <div id="stage"><canvas id="c" tabindex="0" aria-label="3D view of the Twistflower missile site. Drag to look around; use the Next and Back buttons to move between stations."></canvas></div>
+<div id="photos" aria-hidden="true"></div>
 <div id="labels" aria-hidden="false"></div>
 
 <header class="top">
@@ -856,6 +861,22 @@ canvas.addEventListener('pointermove', e => { if (!drag || anim) return; const d
 const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
+/* ---------- photoreal station plates (concepts/README.md has how they were made) ---------- */
+const PHOTOS = {1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 10:'11-through-the-doors'};
+const plates = {};
+Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, a:0, t0:0};
+  img.onload = () => { pl.ready = true; }; img.src = 'stations/' + PHOTOS[k] + '.jpg'; $('photos').appendChild(img); plates[k] = pl; });
+let plateLast = 0;
+function updatePlates(now){ const dt = plateLast ? Math.min(0.1, (now - plateLast)/1000) : 0; plateLast = now;
+  const look = Math.min(1, Math.max(Math.abs(yaw)/0.3, Math.abs(pitch)/0.25));
+  for (const k in plates){ const pl = plates[k], here = +k === stop && !anim && pl.ready;
+    const target = here ? 1 - smooth(0.35, 1, look) : 0;
+    if (here && pl.a === 0) pl.t0 = now;
+    const rate = target > pl.a ? 1.1 : 2.6; pl.a += Math.sign(target - pl.a) * Math.min(Math.abs(target - pl.a), dt*rate);
+    if (pl.a < 0.002 && target === 0) pl.a = 0;
+    pl.img.style.opacity = pl.a.toFixed(3);
+    if (pl.a > 0 && !reduce){ const z = 1 + Math.min(1, (now - pl.t0)/24000)*0.035; pl.img.style.transform = 'translate(' + (-yaw*3).toFixed(2) + '%,' + (pitch*3).toFixed(2) + '%) scale(' + z.toFixed(4) + ')'; } } }
+
 /* ---------- loop ---------- */
 const ease = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
 let composer = null, finalPass = null;
@@ -927,7 +948,7 @@ function frame(now){
   { const dt = lastF ? Math.min(0.1, (now - lastF)/1000) : 1; lastF = now; const target = camera.position.y < -1.5 ? EXPOSURE_BELOW : EXPOSURE; exposure += (target - exposure)*Math.min(1, dt*2.5);
     if (composer) finalPass.uniforms.exposure.value = exposure; else renderer.toneMappingExposure = exposure; }
   if (composer){ finalPass.uniforms.time.value = s; composer.render(); } else renderer.render(scene, camera);
-  adaptQuality(now);
+  updatePlates(now); adaptQuality(now);
   requestAnimationFrame(frame);
 }
 /* soundtrack: browsers only allow sound after a tap, so it starts on the first interaction and loops for the whole journey */
