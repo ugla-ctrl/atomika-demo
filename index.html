@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://demo.atomikafest.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The open doors of the Twistflower silo at night, with laser beams rising into the starry desert sky.">
+<meta property="og:image:alt" content="A festival crowd around the open doors of the Twistflower silo at night, laser beams rising into the starry desert sky.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Enter the Silo | ATOMIKA">
 <meta name="twitter:description" content="An interactive descent into the Twistflower missile silo near Roswell, New Mexico.">
@@ -509,73 +509,21 @@ const panelA = TX('panel','#7f8a84', {metalness:0.45, roughness:0.6, chroma:0.9}
   for (let k=0;k<14;k++){ const li = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.08), G(['#FF0000','#01CFFE','#FFEEA9','#FF7E1D'][k%4])); li.position.set(-3.9+k*0.6, 3.5, -0.75); li.rotation.x = -0.35; g.add(li); blinkers.push(li); }
   const key = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.2,0.7), G('#FF0000')); key.position.set(0,2.9,0.6); g.add(key); }
 animators.push(s => { const tick = Math.floor(s*4); if (tick !== animators._t){ animators._t = tick; for (let i=0;i<8;i++){ const b = blinkers[(Math.random()*blinkers.length)|0]; b.visible = !b.visible; } } });
-/* re-enactors: articulated figures (hips, knees, shoulders, elbows, neck) with smooth shading, period USAF uniforms and a walk cycle */
-const SM = (c, o) => new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:0.72, metalness:0}, o||{}));
-function limb(rTop, rBot, len, mat){ const g = new THREE.CylinderGeometry(rTop, rBot, len, 14); g.translate(0, -len/2, 0); const m = new THREE.Mesh(g, mat); return m; }
-function joint(parent, x, y, z){ const j = new THREE.Group(); j.position.set(x, y, z); parent.add(j); return j; }
-function person(o){
-  const shirt = SM(o.shirt), trou = SM(o.trousers), skin = SM(o.skin, {roughness:0.6}), hair = SM(o.hair, {roughness:0.9}), shoe = SM('#111111', {roughness:0.35}), belt = SM('#151515', {roughness:0.4});
-  const g = new THREE.Group();
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.0, 24), new THREE.MeshBasicMaterial({color:'#000000', transparent:true, opacity:0.35, depthWrite:false})); shadow.rotation.x = -Math.PI/2; shadow.position.y = 0.03; g.add(shadow);
-  const hips = joint(g, 0, 3.05, 0);
-  const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.52, 16, 10), trou); pelvis.scale.set(1, 0.55, 0.62); hips.add(pelvis);
-  const legs = [-1, 1].map(sd => { const hj = joint(hips, sd*0.27, -0.05, 0); hj.add(limb(0.25, 0.19, 1.5, trou));
-    const kj = joint(hj, 0, -1.5, 0); kj.add(limb(0.19, 0.14, 1.42, trou));
-    const f = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.78), shoe); f.position.set(0, -1.48, 0.17); kj.add(f); return {hj, kj}; });
-  const spine = joint(hips, 0, 0.12, 0);
-  const torsoG = new THREE.CylinderGeometry(0.6, 0.47, 1.85, 18); torsoG.translate(0, 0.95, 0); const torso = new THREE.Mesh(torsoG, shirt); torso.scale.z = 0.62; spine.add(torso);
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.6, 18, 10, 0, Math.PI*2, 0, Math.PI/2), shirt); chest.scale.set(1, 0.35, 0.62); chest.position.y = 1.86; spine.add(chest);
-  const bl = new THREE.Mesh(new THREE.CylinderGeometry(0.49, 0.49, 0.16, 18), belt); bl.scale.z = 0.64; bl.position.y = 0.06; spine.add(bl);
-  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.04), SM('#c9b37a', {metalness:0.6, roughness:0.3})); buckle.position.set(0, 0.06, 0.32); spine.add(buckle);
-  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.02), SM('#f2f2f2')); tag.position.set(-0.24, 1.45, 0.37); spine.add(tag);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.32, 12), skin); neck.position.y = 2.05; spine.add(neck);
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.06, 6, 16), shirt); collar.rotation.x = Math.PI/2; collar.position.y = 1.95; spine.add(collar);
-  const head = joint(spine, 0, 2.2, 0);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.36, 22, 16), skin); skull.scale.set(0.88, 1.12, 1); skull.position.y = 0.36; head.add(skull);
-  const hr = new THREE.Mesh(new THREE.SphereGeometry(0.375, 22, 12, 0, Math.PI*2, 0, Math.PI*0.5), hair); hr.scale.set(0.9, 0.9, 1.04); hr.position.set(0, 0.47, -0.02); head.add(hr);
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 8), skin); nose.rotation.x = Math.PI/2; nose.position.set(0, 0.33, 0.35); head.add(nose);
-  [-1,1].forEach(sd => { const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), skin); ear.scale.set(0.5,1,0.8); ear.position.set(sd*0.32, 0.36, 0); head.add(ear); });
-  if (o.cap){ const cap = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.17, 0.82), SM(o.trousers)); cap.position.set(0.03, 0.74, 0); cap.rotation.z = 0.12; head.add(cap); }
-  const arms = [-1, 1].map(sd => { const sj = joint(spine, sd*0.7, 1.72, 0); sj.add(limb(0.14, 0.12, 1.12, shirt));
-    const ej = joint(sj, 0, -1.12, 0); ej.add(limb(0.115, 0.095, 1.0, o.sleeves ? skin : shirt));
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), skin); hand.scale.set(0.75, 1.15, 0.55); hand.position.y = -1.1; ej.add(hand); return {sj, ej}; });
-  g.userData = {hips, spine, head, legs, arms, p:0};
-  return g;
-}
-function pose(f, walk, p){ const u = f.userData;
-  const L = u.legs, A = u.arms, s = Math.sin(p);
-  L[0].hj.rotation.x = -0.42*s*walk; L[1].hj.rotation.x = 0.42*s*walk;
-  L[0].kj.rotation.x = walk*(0.12 + 0.6*Math.max(0, Math.sin(p - 1.2))); L[1].kj.rotation.x = walk*(0.12 + 0.6*Math.max(0, Math.sin(p + Math.PI - 1.2)));
-  A[0].sj.rotation.x = 0.35*s*walk; A[1].sj.rotation.x = -0.35*s*walk; A[0].sj.rotation.z = -0.06; A[1].sj.rotation.z = 0.06;
-  A[0].ej.rotation.x = -0.25 - 0.15*walk*Math.max(0, s); A[1].ej.rotation.x = -0.25 - 0.15*walk*Math.max(0, -s);
-  u.hips.position.y = 3.05 + 0.07*walk*Math.abs(Math.cos(p)); u.spine.rotation.y = 0.08*s*walk; u.hips.rotation.y = -0.08*s*walk; }
-const skins = ['#c9a184','#a8765a','#e2bea2','#7f5440','#d4ab8c'], hairs = ['#2a1d14','#151515','#4a3424','#0e0e0e','#6b4a2c'];
-const crew = [];
-const uniform = i => ({shirt:'#a9bfd8', trousers:'#24314a', skin:skins[i%5], hair:hairs[i%5], cap:i%2===0, sleeves:i===1});
-[[12.5, TUN+1.2, TUN+2.6, 0.30, 0.0], [14.5, TUN+3.3, TUN+4.9, 0.24, 1.7], [9.5, TUN+2.3, TUN+3.9, 0.20, 3.1]].forEach(([r,a0,a1,sp,ph], i) => {
-  const f = person(uniform(i)); scene.add(f); crew.push({f, r, a0, a1, sp, ph, walk:true, last:null}); });
-[[TUN+Math.PI-0.2, 8.3, 'buttons'], [TUN+Math.PI+0.2, 8.3, 'clipboard']].forEach(([a,r,job], i) => { const f = person(uniform(i+3)); f.position.set(C.x+r*Math.sin(a), -21, C.z+r*Math.cos(a)); f.rotation.y = a + Math.PI; scene.add(f);
-  if (job === 'clipboard'){ const cb = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.05, 1.0), SM('#8a6a43')); cb.position.set(0, -1.15, 0.25); cb.rotation.x = 0.3; f.userData.arms[0].ej.add(cb); }
-  crew.push({f, a, walk:false, job, ph:i*2.1}); });
-let lastS = null;
-animators.push(s => { const dt = lastS === null ? 0 : Math.min(0.1, s - lastS); lastS = s;
-  crew.forEach(c => { const u = c.f.userData;
-    if (c.walk){ const k = 0.5 - 0.5*Math.cos(s*c.sp + c.ph); const a = c.a0 + (c.a1-c.a0)*k;
-      const x = C.x + c.r*Math.sin(a), z = C.z + c.r*Math.cos(a);
-      let speed = 0; if (c.last){ const dx = x - c.last.x, dz = z - c.last.z; const d = Math.hypot(dx, dz); speed = dt > 0 ? d/dt : 0;
-        if (d > 1e-4){ const target = Math.atan2(dx, dz); let diff = ((target - c.f.rotation.y + Math.PI*3) % (Math.PI*2)) - Math.PI; c.f.rotation.y += diff*Math.min(1, dt*8); } }
-      c.last = {x, z}; c.f.position.set(x, -21, z);
-      const walk = Math.min(1, speed/2.2); u.p += speed*dt/1.25; pose(c.f, walk, u.p);
-      u.head.rotation.y = (1-walk)*0.5*Math.sin(s*0.7 + c.ph); }
-    else { pose(c.f, 0, 0);
-      if (c.job === 'buttons'){ const A = u.arms[1]; A.sj.rotation.x = -1.05 + 0.08*Math.sin(s*3 + c.ph); A.ej.rotation.x = -0.55 + 0.25*Math.max(0, Math.sin(s*5.5 + c.ph)); u.arms[0].sj.rotation.x = -0.5; u.arms[0].ej.rotation.x = -0.9;
-        u.head.rotation.x = 0.25; u.head.rotation.y = 0.25*Math.sin(s*0.5 + c.ph); u.spine.rotation.x = 0.12; }
-      else { const A = u.arms[0]; A.sj.rotation.x = -0.55; A.ej.rotation.x = -1.35; u.arms[1].sj.rotation.x = -0.4 + 0.05*Math.sin(s*4); u.arms[1].ej.rotation.x = -1.3 + 0.12*Math.sin(s*9);
-        u.head.rotation.x = 0.45 - 0.35*Math.max(0, Math.sin(s*0.4 + c.ph)); u.head.rotation.y = -0.15; } } }); });
-/* Level -2 visitors in street clothes, slowly taking in the projections */
-const guests = [[4.2, 9, '#1b1d24','#2d2f38'], [2.2, 7, '#3a2a2a','#1d1f26'], [5.6, 11.5, '#20303a','#16181e']].map(([a,r,top,bot], i) => {
-  const f = person({shirt:top, trousers:bot, skin:skins[(i+2)%5], hair:hairs[(i+1)%5], cap:false, sleeves:false}); f.position.set(C.x+r*Math.sin(a), -31, C.z+r*Math.cos(a)); f.rotation.y = a; scene.add(f); pose(f, 0, 0); return {f, ph:i*1.9}; });
-animators.push(s => guests.forEach(g => { const u = g.f.userData; u.head.rotation.x = -0.25 + 0.1*Math.sin(s*0.3 + g.ph); u.head.rotation.y = 0.6*Math.sin(s*0.12 + g.ph); u.spine.rotation.y = 0.15*Math.sin(s*0.12 + g.ph); }));
+/* people: photographs of real crew and visitors (OpenArt Nano Banana Pro, shot on chroma green and keyed into people/*.webp),
+   standing upright and turning to face the camera, with a soft contact shadow on the floor */
+const cutouts = [], shadowMat = new THREE.MeshBasicMaterial({color:'#000000', transparent:true, opacity:0.4, depthWrite:false}); shadowMat.userData.lin = true;
+function cutout(file, x, y, z, h){ const g = new THREE.PlaneGeometry(1, 1); g.translate(0, 0.5, 0);
+  const mat = new THREE.MeshStandardMaterial({roughness:1, metalness:0, alphaTest:0.5, side:THREE.DoubleSide, emissive:new THREE.Color(1,1,1), emissiveIntensity:0.22}); mat.userData.lin = true;
+  const m = new THREE.Mesh(g, mat); m.scale.set(h*0.36, h, 1); m.position.set(x, y, z); scene.add(m);
+  texLoader.load('people/' + file + '.webp', t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; mat.map = t; mat.emissiveMap = t; mat.needsUpdate = true; m.scale.x = h*t.image.width/t.image.height; });
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(0.95, 24), shadowMat); sh.rotation.x = -Math.PI/2; sh.position.set(x, y + 0.03, z); sh.scale.y = 0.55; scene.add(sh);
+  cutouts.push(m); return m; }
+/* Level -1, 1962 crew at the consoles; Level -2, visitors taking in the projections */
+[['crew-1', 12.5, TUN+1.9, 6.0], ['crew-2', 14.5, TUN+4.1, 5.8], ['crew-3', 9.5, TUN+3.1, 5.5], ['crew-4', 8.3, TUN+Math.PI-0.25, 5.9], ['crew-5', 8.3, TUN+Math.PI+0.25, 5.8]]
+  .forEach(([f, r, a, h]) => cutout(f, C.x + r*Math.sin(a), -21, C.z + r*Math.cos(a), h));
+[['visitor-1', 4.2, 9, 5.5], ['visitor-2', 2.2, 7, 5.9], ['visitor-3', 5.6, 11.5, 5.5], ['visitor-4', 3.3, 13, 6.0]]
+  .forEach(([f, a, r, h]) => cutout(f, C.x + r*Math.sin(a), -31, C.z + r*Math.cos(a), h));
+animators.push(() => cutouts.forEach(m => { m.rotation.y = Math.atan2(camera.position.x - m.position.x, camera.position.z - m.position.z); }));
 { const l = new THREE.PointLight('#e8f0ff', 1.05, 42, 1.4); l.position.set(C.x,-13,C.z); scene.add(l); }
 /* fluorescent fixtures around the Level -1 ceiling */
 for (let i=0;i<10;i++){ const a = i/10*Math.PI*2 + 0.31, r = 13.5, f = add(new THREE.BoxGeometry(0.5, 0.18, 4.2), G('#f4f8ff'), C.x + r*Math.sin(a), -11.7 + 0.18*Math.pow(r/20, 2)*3.6, C.z + r*Math.cos(a)); f.rotation.y = a + Math.PI/2;
@@ -862,9 +810,9 @@ const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
 /* ---------- photoreal station plates (concepts/README.md has how they were made) ---------- */
-const PHOTOS = {1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 10:'11-through-the-doors'};
+const PHOTOS = {0:'01-roswell', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
 const plates = {};
-Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, a:0, t0:0};
+if (!/[?&]3d\b/.test(location.search)) Object.keys(PHOTOS).forEach(k => { /* ?3d shows the live 3D only */ const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, a:0, t0:0};
   img.onload = () => { pl.ready = true; }; img.src = 'stations/' + PHOTOS[k] + '.jpg'; $('photos').appendChild(img); plates[k] = pl; });
 let plateLast = 0;
 function updatePlates(now){ const dt = plateLast ? Math.min(0.1, (now - plateLast)/1000) : 0; plateLast = now;

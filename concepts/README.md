@@ -18,21 +18,11 @@ AI re-renders of the Enter the Silo stations, made to settle the photoreal look 
 
 ## Status
 
-| # | Station | Renders | Pick |
-|---|---|---|---|
-| 01 | Roswell | 1 (OpenArt, watermarked) | none yet |
-| 02 | The Approach | 4 | v2 |
-| 03 | Festival Grounds | 4 | v2 |
-| 04 | The Site | 4 | v1 |
-| 05 | The Entry | 4 | v2 |
-| 06 | The Stair Shaft | 2 | v2 |
-| 07 | Launch Control, 1962 | 4 | v2 |
-| 08 | Deep Space | not yet | |
-| 09 | The Tunnel | not yet | |
-| 10 | The Silo | not yet | |
-| 11 | Through the Doors | 4 | v2 |
+The live site uses the **people pass** (OpenArt, GPT Image 2.5 Sunburst at 2K high quality, 172 credits per image) for all 11 stations: `renders/<station>/openart-gpt-image-2.5-people.png`, web copies in `../stations/`. The earlier, empty ElevenLabs renders are kept alongside for reference.
 
-Stations 08–10 and a clean Roswell stopped when the ElevenLabs plan reached its 10,000-credit cap. Their prompts are below, ready to run.
+The people in the live 3D (crew on Level −1, visitors on Level −2) are real-person cutouts: Nano Banana Pro lineups on green (`people/crew-sheet.png`, `people/visitors-sheet.png`) keyed into `../people/*.webp` with `.claude/skills/creative-technologist/scripts/key_cutouts.py`.
+
+The people-pass prompts follow the template in `.claude/skills/creative-technologist/references/prompting.md` and name the people, their actions, wardrobe, props, light sources and camera for each station. The prompts below are the first (empty-scene) pass.
 
 ## Prompts
 

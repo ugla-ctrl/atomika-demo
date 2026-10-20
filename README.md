@@ -8,7 +8,9 @@ Live at https://demo.atomikafest.com
 - Rendering: linear HDR scene, ACES filmic tone mapping, bloom, film grain and vignette; moonlight shadows; image-based reflections (procedural night sky outside, a fluorescent-room environment underground); exposure adapts when you go below grade. Pixel ratio steps down automatically on slower devices; add `?hq` to turn that off.
 - `tex/` holds photo-scanned PBR textures (color, normal, roughness at 1k) from [Poly Haven](https://polyhaven.com), CC0. Each is tinted in code so it averages to the color it replaced in the original palette.
 - `?station=N` opens straight at station N (1 to 11).
-- `stations/` holds photoreal plates for stations 2–7 and 11. The camera flies through the 3D scene, and on arrival the view dissolves into the plate; dragging to look around fades back to the live 3D. Stations without a plate stay 3D. The plates are AI re-renders of the 3D frames; sources, every variation and the prompts are in `concepts/` (see `concepts/README.md`).
+- `people/` holds real-person cutouts (crew and visitors) that stand in the live 3D in place of modeled figures.
+- `.claude/skills/creative-technologist/` is the Claude Code skill used to make all of this: how to turn a 3D build into human-realistic plates and cutouts with OpenArt or ElevenLabs.
+- `stations/` holds photoreal plates, with real people, for all 11 stations. The camera flies through the 3D scene, and on arrival the view dissolves into the plate; dragging to look around fades back to the live 3D. `?3d` turns the plates off. The plates are AI re-renders of the 3D frames; sources, every variation and the prompts are in `concepts/` (see `concepts/README.md`).
 - `og.png` is the social share image.
 - Hosted on GitHub Pages; `CNAME` sets the custom domain.
 
