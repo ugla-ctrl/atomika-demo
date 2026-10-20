@@ -1,0 +1,212 @@
+{
+ "_note": "Switchback (U-turn) stair matching the reference photo. Camera stands on the upper landing (left half, y=0). Flight 1 descends away along the left wall to a full-width mid landing at the far wall (y=-5). Flight 2 turns 180 degrees and comes back toward the camera along the right wall, down to the lower floor (y=-10). One continuous center rail divides the two flights. Feet, +y up, camera at +z.",
+ "camera": {
+  "pos": [
+   2.0,
+   6.8,
+   4.2
+  ],
+  "look": [
+   5.4,
+   -4.6,
+   -11.0
+  ],
+  "fov": 66
+ },
+ "boxes": [
+  {
+   "min": [
+    -1.0,
+    -12,
+    -17
+   ],
+   "max": [
+    0.0,
+    12,
+    4
+   ],
+   "shade": 0.8
+  },
+  {
+   "min": [
+    9.5,
+    -12,
+    -17
+   ],
+   "max": [
+    10.5,
+    12,
+    4
+   ],
+   "shade": 0.8
+  },
+  {
+   "min": [
+    0,
+    -12,
+    -17
+   ],
+   "max": [
+    9.5,
+    12,
+    -16
+   ],
+   "shade": 0.82
+  },
+  {
+   "min": [
+    0,
+    -0.6,
+    -3
+   ],
+   "max": [
+    4.75,
+    0,
+    3
+   ],
+   "shade": 0.7
+  },
+  {
+   "min": [
+    0,
+    -5.6,
+    -16
+   ],
+   "max": [
+    9.5,
+    -5,
+    -11.2
+   ],
+   "shade": 0.68
+  },
+  {
+   "min": [
+    0,
+    -10.6,
+    -3
+   ],
+   "max": [
+    9.5,
+    -10,
+    3
+   ],
+   "shade": 0.45
+  },
+  {
+   "min": [
+    3.2,
+    -5,
+    -16.0
+   ],
+   "max": [
+    6.2,
+    2.0,
+    -15.9
+   ],
+   "shade": 0.12
+  }
+ ],
+ "flights": [
+  {
+   "name": "flight 1 (down, away)",
+   "start": [
+    0,
+    0,
+    -3
+   ],
+   "dir": "-z",
+   "width": 4.75,
+   "rise": 5,
+   "riser": 0.58,
+   "tread": 0.92,
+   "shade": 0.72
+  },
+  {
+   "name": "flight 2 (down, back toward camera)",
+   "start": [
+    4.75,
+    -5,
+    -11.2
+   ],
+   "dir": "+z",
+   "width": 4.75,
+   "rise": 5,
+   "riser": 0.58,
+   "tread": 0.92,
+   "shade": 0.72
+  }
+ ],
+ "rails": [
+  {
+   "points": [
+    [
+     4.75,
+     3.2,
+     3
+    ],
+    [
+     4.75,
+     3.2,
+     -3
+    ],
+    [
+     4.75,
+     -1.8,
+     -11.2
+    ],
+    [
+     4.75,
+     -6.8,
+     -2.92
+    ]
+   ],
+   "posts": true,
+   "postHeight": 3.2
+  },
+  {
+   "points": [
+    [
+     0.2,
+     3.0,
+     -2.5
+    ],
+    [
+     0.2,
+     -2.0,
+     -11.0
+    ]
+   ],
+   "posts": false
+  },
+  {
+   "points": [
+    [
+     0.3,
+     -2.0,
+     -15.8
+    ],
+    [
+     9.2,
+     -2.0,
+     -15.8
+    ]
+   ],
+   "posts": false
+  },
+  {
+   "points": [
+    [
+     9.3,
+     -2.0,
+     -11.0
+    ],
+    [
+     9.3,
+     -7.0,
+     -2.9
+    ]
+   ],
+   "posts": false
+  }
+ ]
+}

@@ -1,0 +1,194 @@
+{
+ "_note": "Stair shaft seen from above the upper landing. Shaft 9.5 ft wide (x), 19 ft deep (z, camera at +z). Upper landing at y=0 across the near end; one straight flight (11 risers @ 6.98 in, 11 in treads) descends along the right wall (-z) to the lower floor at y=-6.4; a doorway in the far wall at the lower level. Open well left of the flight, guarded. Feet.",
+ "camera": {
+  "pos": [
+   2.4,
+   4.8,
+   1.0
+  ],
+  "look": [
+   6.2,
+   -3.4,
+   -12.5
+  ],
+  "fov": 66
+ },
+ "boxes": [
+  {
+   "min": [
+    -1.0,
+    -9,
+    -17
+   ],
+   "max": [
+    0.0,
+    12,
+    4
+   ],
+   "shade": 0.8
+  },
+  {
+   "min": [
+    9.5,
+    -9,
+    -17
+   ],
+   "max": [
+    10.5,
+    12,
+    4
+   ],
+   "shade": 0.8
+  },
+  {
+   "min": [
+    0,
+    -9,
+    -17
+   ],
+   "max": [
+    9.5,
+    12,
+    -16
+   ],
+   "shade": 0.82
+  },
+  {
+   "min": [
+    0,
+    -0.6,
+    -3
+   ],
+   "max": [
+    9.5,
+    0,
+    3
+   ],
+   "shade": 0.7
+  },
+  {
+   "min": [
+    0,
+    -7.0,
+    -16
+   ],
+   "max": [
+    9.5,
+    -6.4,
+    -3
+   ],
+   "shade": 0.42
+  },
+  {
+   "min": [
+    5.3,
+    -6.4,
+    -16.0
+   ],
+   "max": [
+    8.3,
+    0.6,
+    -15.9
+   ],
+   "shade": 0.12
+  },
+  {
+   "min": [
+    0,
+    -6.4,
+    -16
+   ],
+   "max": [
+    4.75,
+    -6.0,
+    -3
+   ],
+   "shade": 0.38
+  }
+ ],
+ "flights": [
+  {
+   "name": "flight",
+   "start": [
+    4.75,
+    0,
+    -3
+   ],
+   "dir": "-z",
+   "width": 4.75,
+   "rise": 6.4,
+   "riser": 0.58,
+   "tread": 0.92,
+   "shade": 0.72
+  }
+ ],
+ "rails": [
+  {
+   "points": [
+    [
+     0.3,
+     3.2,
+     -3
+    ],
+    [
+     4.6,
+     3.2,
+     -3
+    ]
+   ],
+   "posts": true,
+   "postHeight": 3.2
+  },
+  {
+   "points": [
+    [
+     4.6,
+     3.2,
+     -3
+    ],
+    [
+     4.6,
+     -3.2,
+     -13.12
+    ],
+    [
+     4.6,
+     -3.2,
+     -15.7
+    ]
+   ],
+   "posts": true,
+   "postHeight": 3.2
+  },
+  {
+   "points": [
+    [
+     9.3,
+     3.0,
+     -2.5
+    ],
+    [
+     9.3,
+     -3.4,
+     -13.12
+    ]
+   ],
+   "posts": false
+  },
+  {
+   "points": [
+    [
+     0.2,
+     3.0,
+     2.8
+    ],
+    [
+     0.2,
+     3.0,
+     -2.8
+    ]
+   ],
+   "posts": false
+  }
+ ]
+}
