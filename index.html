@@ -849,7 +849,10 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   { const pl = plates[to]; if (pl && !pl.img.src) pl.img.src = pl.src; }
   /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
      a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
-  const c = to > from ? clips[to - 1] : null, now = performance.now(); warmLoop(to);
+  /* films whose footage already IS a station video (stations 1-5 rest on the film that leaves them; 6 and 11 rest on the film that arrives):
+     don't play them again as the move, dissolve straight into the next station's video instead */
+  const SKIP_FILM = {0:1, 1:1, 2:1, 3:1, 4:1, 9:1};
+  const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); warmLoop(to);
   const lf = loops[from], m = lf && lf.ready && /scale\(([\d.]+)\)/.exec(lf.v.style.transform || '');
   tr = {from, to, t0:now, clip:null, fadeIn: true, fadeMs: (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900, fromScale: m ? +m[1] : 0};
   if (c && !c.ready && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 3600; return 3000 + 9000; } /* hold briefly while the clip loads */
