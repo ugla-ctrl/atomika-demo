@@ -89,6 +89,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 /* photoreal station plates: shown on arrival, dissolve back to the live 3D view on drag or departure */
 #photos{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;background:transparent}
 #photos img{position:absolute;inset:-7%;width:114%;height:114%;object-fit:cover;opacity:0;will-change:opacity,transform,filter}
+#photos{background:#000}
 #photos video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;background:#000}
 #photos video[loop]{background:transparent;will-change:opacity,transform;transform-origin:50% 50%}
 @media (prefers-reduced-motion:reduce){#photos img{inset:0;width:100%;height:100%}}
@@ -831,9 +832,12 @@ if (PHOTO_MODE){
     v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
-  Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+  Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     v.dataset.src = 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const l = {v, ready:false};
-    v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l; });
+    v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;
+    /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
+    v.addEventListener('ended', () => { v.currentTime = l.restart || 0; v.play().catch(() => {}); });
+    fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; }).catch(() => {}); });
 }
 function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){ l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load(); } }
 /* fetch the clip that leaves the current station, so Next can play it without waiting */
@@ -910,7 +914,7 @@ function updatePlates(now){
       l.v.style.transform = ''; if (o >= 0.999) cover = true; }   /* no per-frame scaling on video: resampling a moving scale shimmers */
     else { if (!l.v.paused) l.v.pause(); l.armed = false; }
     l.v.style.opacity = o.toFixed(3); }
-  photoCover = cover; canvas.style.opacity = cover ? '0' : '1'; }
+  photoCover = cover || PHOTO_MODE; canvas.style.opacity = photoCover ? '0' : '1'; }   /* in photo mode the 3D is never shown: better a black frame than the CG */
 
 /* ---------- loop ---------- */
 const ease = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
