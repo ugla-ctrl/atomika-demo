@@ -88,9 +88,11 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 #labels{position:fixed;inset:0;pointer-events:none;z-index:4}
 /* photoreal station plates: shown on arrival, dissolve back to the live 3D view on drag or departure */
 #photos{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;background:transparent}
-#photos img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;will-change:opacity}
+#photos img{position:absolute;inset:-7%;width:114%;height:114%;object-fit:cover;opacity:0;will-change:opacity,transform,filter}
 #photos{background:#000}
-#photos video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;background:transparent;will-change:opacity}
+#photos video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;background:#000}
+#photos video[loop]{background:transparent;will-change:opacity,transform;transform-origin:50% 50%}
+@media (prefers-reduced-motion:reduce){#photos img{inset:0;width:100%;height:100%}}
 .tag{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%);white-space:nowrap;
   font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--cyan);background:rgba(0,0,0,.72);border:1px solid rgba(1,207,254,.55);border-radius:999px;padding:6px 10px;cursor:default;transition:opacity .25s}
 .tag.go{cursor:pointer;background:var(--cyan);color:#000;border-color:var(--cyan)}
@@ -106,10 +108,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 </head>
 <body>
 <div id="stage"><canvas id="c" tabindex="0" aria-label="3D view of the Twistflower missile site. Drag to look around; use the Next and Back buttons to move between stations."></canvas></div>
-<div id="photos" aria-hidden="true"><img id="boot" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>
-<script>/* first paint: the station's photograph, straight from HTML, before three.js has loaded. The player below removes it once it has taken over. */
-(function(){ if (/[?&]3d\b/.test(location.search)) return; var m = /[?&]station=(\d+)/.exec(location.search), n = m ? Math.max(1, Math.min(11, +m[1])) : 1;
-  document.getElementById('boot').src = 'stations/' + ['01-roswell','02-approach','03-festival-grounds','04-the-site','05-entry','06-stair-shaft','07-launch-control-1962','08-deep-space','09-tunnel','10-the-silo','11-through-the-doors'][n-1] + '.jpg'; })();</script>
+<div id="photos" aria-hidden="true"></div>
 <div id="labels" aria-hidden="false"></div>
 
 <header class="top">
@@ -794,7 +793,7 @@ function go(i){
   const far = (stop === 0 || i === 0) && Math.abs(i - stop) >= 1;
   const dur = reduce ? 350 : (far ? 5200 : Math.min(7000, 1300 + 520*Math.abs(to - from)));
   modeOrbit = !!STOPS[stop].orbit;
-  const pd = photoTransition(stop, i); if (pd < 0) return;   /* a move is already running: ignore the click */
+  const pd = photoTransition(stop, i);
   anim = {from, to, t0:performance.now(), dur: pd || dur, y0:yaw, p0:pitch};
   stop = i; renderCard();
 }
@@ -817,112 +816,105 @@ const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
 /* ---------- photoreal navigation (concepts/README.md has how the plates were made) ----------
-   Every station is footage. Arriving by Next plays the film that ends there; when it ends, that station's rest video (loops/NN.mp4)
-   takes over on the same frame at the same framing, and keeps running until you leave. Nothing is ever scaled or panned by the page
-   (photo, film and rest video all sit at 100%), so no hand-over can show a zoom. A photograph is only the very first paint, before
-   any video has decoded; once video exists it is never shown again. The 3D scene is never drawn in this mode (?3d shows it).
-   Rest videos are one of two kinds, set by loops/NN.json:
-     dwell  - a steady shot, then a body that repeats: while playing it jumps back by exactly the blended length, so it never ends
-     hover  - (station 1) the first seconds of the arrival film, re-timed to drift at a crawl with zero velocity at its turns.
-              Next plays the SAME film from the current position, easing up from the crawl: the hand-over is the same footage. */
+   Every station is a photograph with real people in it. Moving between stations plays a filmed transition clip when there is one
+   (transitions/<from>-<to>.mp4, first frame = this station, last frame = the next), and otherwise a camera-push dissolve from photo
+   to photo. Dragging pans the photo. The 3D scene still drives the path, depth readout and label positions, but is only drawn while
+   photos are loading, or always with ?3d. */
 const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
 const PHOTOS = {0:'01-roswell', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
 const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
-const plates = {}, clips = {}, rests = {}, pad2 = n => String(n).padStart(2, '0');
-/* How long the dissolves are, per film i (station i -> i+1), from measuring how far the film's first frame is from the plate we leave and its last frame from the plate we reach.
-   Most match closely; films 4->5 and 6->7 start on a different picture than their station, and several end darker or off-frame, so they get longer, softer dissolves. */
-const HEAD_MS = [1000, 900, 900, 1900, 900, 2300, 900, 900, 900, 900], TAIL_MS = [1100, 1300, 1700, 1100, 1500, 1500, 1900, 1500, 1100, 1100];
-const VEXT = (() => { const v = document.createElement('video'); return v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'; })();
-function mkVideo(src){ const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none'; v.dataset.src = src; $('photos').appendChild(v); return v; }
+const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current photo: dissolve into them instead of cutting */
+const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
-  Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, src:'stations/' + PHOTOS[k] + '.jpg'};
+  Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
-  CLIPS.forEach(i => { const c = {v: mkVideo('transitions/' + pad2(i+1) + '-' + pad2(i+2) + VEXT), ready:false}; c.v.addEventListener('loadeddata', () => { c.ready = true; }); clips[i] = c; });
-  Object.keys(PHOTOS).forEach(k => { const l = {v: mkVideo('loops/' + pad2(+k + 1) + VEXT), ready:false, meta:false, vis:0, restart:0, blend:1.5, hover:false, window:0, period:0, jumping:false};
-    l.v.addEventListener('canplaythrough', () => { l.ready = true; });   /* the browser expects to play it through without stalling */
-    fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart || 0; l.blend = j.blend || 1.5; l.hover = !!j.hover; l.window = j.window || 0; l.period = j.period || 0; l.v.loop = l.hover; l.meta = true; }).catch(() => { l.meta = true; });
-    rests[k] = l; });
+  CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+    v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
+  /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
+  Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+    v.dataset.src = 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const l = {v, ready:false};
+    v.addEventListener('canplaythrough', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* ready = the browser expects to play it through without stalling */
+    /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
+    v.addEventListener('ended', () => { v.currentTime = l.restart || 0; v.play().catch(() => {}); });
+    fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; }).catch(() => {}); });
 }
-if (!PHOTO_MODE){ const bt = $('boot'); if (bt) bt.remove(); }
+function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){ l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load(); } }
+/* fetch the clip that leaves the current station, so Next can play it without waiting */
+if (PHOTO_MODE){ warmLoop(stop); if (matchMedia('(pointer:fine)').matches) setTimeout(() => CLIPS.forEach(i => warmClip(i)), 6000); } /* desktop: have every clip ready for jumps */
 function warmClip(i){ const c = clips[i]; if (c && !c.v.src){ c.v.src = c.v.dataset.src; c.v.preload = 'auto'; c.v.load(); } }
-function warmRest(k){ const l = rests[k]; if (l && !l.v.src){ l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load(); } }
-function warmPlate(k){ const pl = plates[k]; if (pl && !pl.img.src) pl.img.src = pl.src; }
-const restReady = k => { const l = rests[k]; return !!(l && l.ready && l.meta); };   /* latched: a seek must not make a playing rest look unready */
-/* where the hover is, in the film's own time (seconds), and how fast it is moving through it (film-seconds per second) */
-function hoverPos(l){ const ph = 2*Math.PI*l.v.currentTime/l.period; return {p: l.window*(1 - Math.cos(ph))/2, v: l.window*Math.PI/l.period*Math.sin(ph)}; }
-if (PHOTO_MODE){ warmPlate(stop); warmRest(stop); if (matchMedia('(pointer:fine)').matches) setTimeout(() => CLIPS.forEach(i => warmClip(i)), 6000); } /* desktop: have every film ready */
-let tr = null, photoCover = PHOTO_MODE, lastNow = 0, bootGone = false;
-/* called by go(): returns the move's length in ms, or -1 when a move is already running (the click is ignored) */
+let tr = null, arrivedAt = 0, photoCover = false;
+/* called by go(): returns the transition length in ms in photo mode */
 function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
-  if (tr) return -1;
-  warmPlate(to); warmRest(to);
-  const c = to === from + 1 ? clips[from] : null, now = performance.now();   /* Next plays the film that leaves this station and ends at the next; every other move is a long dissolve between the two rest videos */
-  tr = {from, to, t0:now, kind:'dissolve', clip:null, pending:null, live:false, liveAt:0, hold:false};
-  if (c && !c.ready && !reduce){ warmClip(from); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 12000; return tr.dur; }   /* hold briefly while the film loads */
+  { const pl = plates[to]; if (pl && !pl.img.src) pl.img.src = pl.src; }
+  /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
+     a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
+  const c = to > from ? clips[to - 1] : null, now = performance.now(); warmLoop(to);
+  const lf = loops[from], m = lf && lf.ready && /scale\(([\d.]+)\)/.exec(lf.v.style.transform || '');
+  tr = {from, to, t0:now, clip:null, fadeIn: true, fadeMs: (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900, fromScale: m ? +m[1] : 0};
+  if (c && !c.ready && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 3600; return 3000 + 9000; } /* hold briefly while the clip loads */
   startTransition(c && c.ready && !reduce ? c : null, now);
   return tr.dur; }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
-  const fl = rests[tr.from], hov = fl && fl.hover && fl.meta && tr.to === tr.from + 1;
-  tr.fromKind = restReady(tr.from) ? 'rest' : 'plate'; tr.toKind = restReady(tr.to) ? 'rest' : 'plate';
-  if (c){ const v = c.v; tr.kind = 'film'; tr.clip = c; tr.startAt = 0; tr.r0 = 0.3; tr.fadeMs = tr.to === tr.from + 1 ? HEAD_MS[tr.from] : 1400; tr.tail = (TAIL_MS[tr.from] || 1100)/1000;
-    if (hov){ const h = hoverPos(fl); tr.startAt = h.p; tr.r0 = Math.max(0.0625, Math.abs(h.v)); tr.fadeMs = 140; }   /* same footage: carry on from where the hover is */
-    v.currentTime = tr.startAt; v.playbackRate = Math.max(0.0625, tr.r0);
-    v.play().catch(() => { tr.kind = 'dissolve'; tr.clip = null; tr.dur = 4200; });
-    tr.dur = Math.max(1500, ((v.duration || 4) - tr.startAt)*1000 + 2500); }
-  else { tr.kind = 'dissolve'; tr.clip = null; tr.dur = reduce ? 350 : 3000;
-    const l = rests[tr.to]; if (tr.toKind === 'rest'){ l.v.pause(); l.v.currentTime = 0; l.v.play().catch(() => {}); } }
+  if (c){ tr.clip = c; c.v.currentTime = 0; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { tr.clip = null; tr.dur = 3600; }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
+  else { tr.clip = null; tr.dur = reduce ? 350 : 4200; } /* unhurried: a slow push out of one photo and a slow settle into the next */
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
-function finishTransition(){ const l = rests[tr.to]; if (l){ l.vis = tr.toKind === 'rest' || tr.kind === 'film' ? 1 : 0; l.jumping = false; } tr = null; }
 function updatePlates(now){
   if (!PHOTO_MODE){ photoCover = false; return; }
-  const dt = Math.min(0.1, (now - lastNow)/1000 || 0.016); lastNow = now;
-  const pOp = {}, rOp = {}, cOp = {};
   const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
-  if (tr && tr.pending && (tr.pending.ready || now > tr.waitUntil)) startTransition(tr.pending.ready ? tr.pending : null, now);
-  if (tr && !tr.pending && now - tr.t0 > tr.dur + 5000){ if (tr.clip) tr.clip.v.pause(); finishTransition(); }   /* watchdog: a stalled film must never leave the buttons dead */
-  if (!tr){
-    warmClip(stop); warmRest(stop); warmRest(stop + 1); warmRest(stop + 2); warmRest(stop - 1);
-    [stop - 1, stop, stop + 1].forEach(warmPlate);
-    const l = rests[stop];
-    if (l && restReady(stop)){ l.vis = Math.min(1, l.vis + dt/0.8); rOp[stop] = l.vis; pOp[stop] = l.vis < 1 ? 1 : 0; }   /* first paint is the photo; the video takes over with a slow fade at the same framing */
-    else pOp[stop] = 1;
-    if (!bootGone && plates[stop] && plates[stop].ready){ bootGone = true; const bt = $('boot'); plates[stop].img.decode().catch(() => {}).then(() => { if (bt) bt.remove(); }); }
-  } else if (tr.kind === 'film' && tr.clip){
-    const v = tr.clip.v, d = v.duration || 0, ct = v.currentTime, rem = d - ct, dst = rests[tr.to];
-    if (tr.fromKind === 'rest') rOp[tr.from] = 1; else pOp[tr.from] = 1;                      /* what we leave stays underneath while the film fades in */
-    if (!tr.live && !v.seeking && v.readyState >= 2 && !v.paused && Math.abs(ct - tr.startAt) < 0.35 + (tr.startAt ? 0.3 : 0)){ tr.live = true; tr.liveAt = now; }
-    const s = tr.live ? (now - tr.liveAt)/1000 : 0, up = tr.r0 + (1 - tr.r0)*smooth(0, 1, s/1.6), k = rem < tr.tail ? 1 - Math.max(0, rem)/tr.tail : 0;
-    if (!tr.hold) v.playbackRate = Math.max(0.0625, Math.min(1, Math.min(up, 1 - 0.7*smooth(0, 1, k))));   /* ease up out of the rest, ease down into the next one */
-    cOp[tr.from] = tr.live ? smooth(0, 1, (now - tr.liveAt)/tr.fadeMs) : 0;
-    const ready = restReady(tr.to);
-    if (ready && !tr.hold && rem <= tr.tail + 1.5 && !dst.armed){ dst.armed = true; dst.v.pause(); dst.v.currentTime = 0; }   /* park the next rest on its first frame */
-    if (ready && dst.armed && !tr.hold && rem <= tr.tail){ if (dst.v.paused) dst.v.play().catch(() => {}); rOp[tr.to] = smooth(0, 1, 1 - Math.max(0, rem)/tr.tail); }
-    if (v.ended || rem <= 0.04){
-      if (ready){ dst.armed = false; if (dst.v.paused){ dst.v.currentTime = 0; dst.v.play().catch(() => {}); } v.pause(); finishTransition(); }
-      else { tr.hold = true; v.pause(); cOp[tr.from] = 1;                                   /* the next rest isn't here yet: hold the film's own last frame, never a still image */
-        if (!tr.holdSince) tr.holdSince = now;
-        if (now - tr.holdSince > 12000){ pOp[tr.to] = 1; finishTransition(); } }
-    }
-    if (tr && tr.hold && ready){ if (!tr.holdFade){ tr.holdFade = now; dst.v.currentTime = 0; dst.v.play().catch(() => {}); } const f = smooth(0, 1, (now - tr.holdFade)/600); rOp[tr.to] = f; if (f >= 1){ v.pause(); finishTransition(); } }
-  } else if (tr.kind === 'dissolve'){
-    const p = Math.min(1, (now - tr.t0)/tr.dur), f = smooth(0.15, 0.85, p);
-    if (tr.fromKind === 'rest') rOp[tr.from] = 1 - f; else pOp[tr.from] = 1 - f;
-    if (tr.toKind === 'rest') rOp[tr.to] = f; else pOp[tr.to] = f;
-    if (p >= 1) finishTransition();
-  }
-  for (const k in plates){ const pl = plates[k], o = pl.ready ? (pOp[k] || 0) : 0; pl.img.style.opacity = o.toFixed(3);
-    if (o > 0){ const a = Math.abs(yaw/1.1), b = Math.abs(pitch/0.7), m = Math.min(1, Math.max(a, b));
-      pl.img.style.transform = m > 0.001 && +k === stop ? pan(yaw/1.1, pitch/0.7) + ' scale(' + (1 + 0.07*m + 0.002).toFixed(4) + ')' : ''; } }   /* only a drag ever moves the photo, and then it covers its own edges */
-  for (const k in rests){ const l = rests[k], v = l.v, o = restReady(k) ? (rOp[k] || 0) : 0; v.style.opacity = o.toFixed(3);
-    if (o > 0.001){
-      if (v.paused && !l.armed) v.play().catch(() => {});
-      if (v.ended){ v.currentTime = l.restart || 0; v.play().catch(() => {}); }          /* safety net only: the jump below means it should never end */
-      if (!l.hover && l.restart && v.duration){
-        if (v.currentTime >= v.duration - l.blend && !l.jumping){ l.jumping = true; v.currentTime = v.currentTime - (v.duration - l.restart); }   /* the file's last `blend` seconds are the `blend` seconds before restart: identical frames, and the landing is a keyframe */
-        else if (l.jumping && v.currentTime < v.duration - l.blend - 0.5) l.jumping = false; }
-    } else if (!l.armed && !v.paused && !(tr && (+k === tr.to))) v.pause(); }
-  for (const k in clips){ const c = clips[k], o = cOp[k] || 0; c.v.style.opacity = o.toFixed(3); if (o === 0 && !c.v.paused && !(tr && tr.clip === c)) c.v.pause(); }
-  photoCover = true; canvas.style.opacity = '0'; }   /* in photo mode the 3D is never shown: better a black frame than the CG */
+  if (tr && tr.pending){
+    if (tr.pending.ready || now > tr.waitUntil) startTransition(tr.pending.ready ? tr.pending : null, now);
+    else { const pl = plates[tr.from]; for (const k in plates) if (plates[k] !== pl) plates[k].img.style.opacity = '0';
+      if (pl && pl.ready){ pl.img.style.opacity = '1'; pl.img.style.transform = 'scale(' + (1.035 + 0.02*Math.min(1, (now - tr.t0)/3000)).toFixed(4) + ')'; photoCover = true; canvas.style.opacity = '0'; }
+      return; } }
+  let p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
+  if (tr && tr.clip){ const v = tr.clip.v, d = v.duration || 0, ct = v.currentTime, lr = loops[tr.to] && loops[tr.to].ready;
+    /* ease the film down into the loop's crawl over its last 2.5 s, and up out of the previous loop over its first 1.2 s */
+    const rem = d - ct, k = rem < 1.2 ? 1 - rem/1.2 : 0, r = ct < 1.0 ? 0.3 + 0.7*(0.5 - 0.5*Math.cos(Math.PI*ct/1.0)) : 1;
+    v.playbackRate = Math.max(0.3, Math.min(r, 1 - 0.7*(0.5 - 0.5*Math.cos(Math.PI*k))));
+    if (d) p = Math.min(p, Math.max(0, Math.min(1, ct/d)));      /* progress follows the film itself */
+    if (v.ended || (d && ct >= d - 0.1)){ if (loops[tr.to] && !lr){ v.pause(); p = 1 - 1e-6; tr.hold = true; } else { tr.hold = false; p = 1; } }   /* stitch not here yet: hold the film's last frame, never a still image */
+    /* the film inherits the zoom the previous loop was at and eases back to 1:1, so the cut carries no scale step */
+    if (tr.fromScale){ const e = Math.min(1, ct/2.0), sc = tr.fromScale + (1 - tr.fromScale)*(0.5 - 0.5*Math.cos(Math.PI*e)); v.style.transform = sc > 1.0005 ? 'scale(' + sc.toFixed(4) + ')' : ''; } }
+  if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; }
+  if (!tr){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop + 2); warmLoop(stop - 1); }
+  /* photos load on demand: this station and its neighbors */
+  [stop - 1, stop, stop + 1].forEach(i => { const pl = plates[i]; if (pl && !pl.img.src) pl.img.src = pl.src; });
+  let cover = false;
+  for (const k in plates){ const pl = plates[k], i = +k; let a = 0, sc = 1, tf = '';
+    if (tr && !tr.clip){ const lv = loops[tr.from] && loops[tr.from].ready && loops[tr.to] && loops[tr.to].ready;   /* video to video when both stitches are here */
+      if (i === tr.from){ a = lv ? 0 : 1 - smooth(0.05, 0.75, p); sc = 1.03 + 0.15*smooth(0, 1, p); }
+      else if (i === tr.to){ a = lv ? 0 : smooth(0.2, 0.85, p); sc = 1.14 - 0.10*smooth(0.2, 1, p); }
+    } else if (!tr && i === stop){ a = 1; const t = (now - arrivedAt)/1000;
+      /* alive while resting: a slow breath in scale, a slow wander in position, never a static frame */
+      /* a visible, continuous push: 4%..12% over ~20 s, ping-pong, plus a wandering pan of up to ~2.5% */
+      sc = 1.04; tf = pan(yaw/1.1, pitch/0.7);   /* no synthetic motion: the footage itself carries the life */
+      pl.img.style.filter = ''; }
+    if (!(!tr && i === stop)) pl.img.style.filter = '';
+    if (a > 0 && !pl.ready) a = 0;
+    if (a >= 0.999) cover = true;
+    pl.img.style.opacity = a.toFixed(3); if (a > 0) pl.img.style.transform = tf + ' scale(' + sc.toFixed(4) + ')'; }
+  /* every clip hands over to the arrival photo with a slow cross-fade, so nothing pops in on the last frame */
+  const fe = tr && tr.clip ? Math.min(0.4, 2000/tr.dur) : 0, endFade = tr && tr.clip ? smooth(1 - fe, 1, p) : 0;
+  const loopReady = tr && tr.clip && loops[tr.to] && loops[tr.to].ready;
+  if (tr && tr.clip && p > 1 - fe && !loopReady && !loops[tr.to]){ const pl = plates[tr.to]; if (pl && pl.ready){ pl.img.style.opacity = '1'; pl.img.style.transform = 'scale(' + (1.04 + 0.03*(1 - smooth(1 - fe, 1, p))).toFixed(4) + ')'; cover = true; } }
+  if (loopReady && p > 1 - fe){ const l = loops[tr.to]; if (!l.armed){ l.armed = true; l.v.pause(); l.v.currentTime = 0; } } /* park the loop on its first frame: the film's last frame, at zero velocity */
+  if (tr && tr.clip && tr.fadeIn){ const f = smooth(0, Math.min(0.4, tr.fadeMs/Math.max(1000, (tr.clip.v.duration || 4)*1000)), p), pl = plates[tr.from], lf = loops[tr.from];
+    if (pl && pl.ready){ pl.img.style.opacity = (lf && lf.ready) ? '0' : (1 - f).toFixed(3); cover = true; } }
+  for (const k in clips){ const on = !!(tr && tr.clip === clips[k]), o = on ? (tr.hold ? 1 : (tr.fadeIn ? smooth(0, Math.min(0.4, tr.fadeMs/Math.max(1000, (tr.clip.v.duration || 4)*1000)), p) : 1)*(loopReady ? 1 : 1 - endFade)) : 0;
+    clips[k].v.style.opacity = o.toFixed(3); if (o >= 0.999) cover = true; }
+  /* mid-dissolve both photos are partly transparent: keep the 3D hidden behind them so only photographs show */
+  if (tr && !tr.clip && ((plates[tr.from] && plates[tr.to] && plates[tr.from].ready && plates[tr.to].ready) || (loops[tr.from] && loops[tr.to] && loops[tr.from].ready && loops[tr.to].ready))) cover = true;
+  for (const k in loops){ const l = loops[k], i = +k; let o = 0;
+    if (!tr && i === stop && l.ready){ o = 1; const pl = plates[i]; if (pl) pl.img.style.opacity = '0'; }   /* resting: the loop continues from the film's last frame; the photo stays out */
+    else if (tr && tr.clip && i === tr.from && l.ready && !tr.pending) o = 1 - smooth(0, Math.min(0.4, (tr.fadeMs || 1400)/Math.max(1000, (tr.clip.v.duration || 4)*1000)), p);
+    else if (tr && i === tr.to && !tr.clip && l.ready && !tr.pending) o = smooth(0.15, 0.85, p);
+    else if (tr && i === tr.from && !tr.clip && l.ready && !tr.pending) o = 1 - smooth(0.15, 0.85, p);
+    if (o > 0.001){ if (l.v.paused) l.v.play().catch(() => {}); const t = (now - arrivedAt)/1000;
+      l.v.style.transform = ''; if (o >= 0.999) cover = true; }   /* no per-frame scaling on video: resampling a moving scale shimmers */
+    else { if (!l.v.paused) l.v.pause(); l.armed = false; }
+    l.v.style.opacity = o.toFixed(3); }
+  photoCover = cover || PHOTO_MODE; canvas.style.opacity = photoCover ? '0' : '1'; }   /* in photo mode the 3D is never shown: better a black frame than the CG */
 
 /* ---------- loop ---------- */
 const ease = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
