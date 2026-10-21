@@ -27,5 +27,5 @@ for k in range(nb, n - nb): wr.write(frames[k])
 for j in range(nb): wr.write(tail_into_head(j))
 wr.release(); restart = n / fps                     # part B starts here: the player seeks back to this keyframe at the end
 open(out + '.json', 'w').write('{"restart": %.4f}' % restart)
-subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', tmp, '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-pix_fmt', 'yuv420p', '-force_key_frames', '%.4f' % restart, '-movflags', '+faststart', out + '.mp4'], check=True); os.remove(tmp)
-subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', out + '.mp4', '-an', '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '34', '-row-mt', '1', '-deadline', 'good', '-cpu-used', '3', '-force_key_frames', '%.4f' % restart, out + '.webm'], check=True)
+subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', tmp, '-an', '-c:v', 'libx264', '-preset', 'slow', '-crf', '26', '-pix_fmt', 'yuv420p', '-force_key_frames', '%.4f' % restart, '-movflags', '+faststart', out + '.mp4'], check=True); os.remove(tmp)
+subprocess.run(['ffmpeg', '-loglevel', 'error', '-y', '-i', out + '.mp4', '-an', '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '38', '-row-mt', '1', '-deadline', 'good', '-cpu-used', '3', '-force_key_frames', '%.4f' % restart, out + '.webm'], check=True)

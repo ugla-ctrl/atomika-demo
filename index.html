@@ -834,7 +834,7 @@ if (PHOTO_MODE){
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     v.dataset.src = 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const l = {v, ready:false};
-    v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;
+    v.addEventListener('canplaythrough', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* ready = the browser expects to play it through without stalling */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     v.addEventListener('ended', () => { v.currentTime = l.restart || 0; v.play().catch(() => {}); });
     fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; }).catch(() => {}); });
@@ -877,7 +877,7 @@ function updatePlates(now){
     /* the film inherits the zoom the previous loop was at and eases back to 1:1, so the cut carries no scale step */
     if (tr.fromScale){ const e = Math.min(1, ct/2.0), sc = tr.fromScale + (1 - tr.fromScale)*(0.5 - 0.5*Math.cos(Math.PI*e)); v.style.transform = sc > 1.0005 ? 'scale(' + sc.toFixed(4) + ')' : ''; } }
   if (tr && p >= 1){ if (tr.clip){ tr.clip.v.pause(); } tr = null; arrivedAt = now; }
-  if (!tr){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
+  if (!tr){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop + 2); warmLoop(stop - 1); }
   /* photos load on demand: this station and its neighbors */
   [stop - 1, stop, stop + 1].forEach(i => { const pl = plates[i]; if (pl && !pl.img.src) pl.img.src = pl.src; });
   let cover = false;
