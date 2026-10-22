@@ -848,28 +848,28 @@ if (PHOTO_MODE){
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
-    v.dataset.src = (+k === 0 ? 'loops/01-traffic' : +k === 1 ? 'loops/02-lasers' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
-    const l = {v, ready:false, restart:+k === 0 ? 2.2 : +k === 1 ? 2 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
+    v.dataset.src = (+k === 0 ? 'loops/01-traffic' : +k === 1 ? 'loops/02-lasers' : +k === 3 ? 'loops/04-living' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    const l = {v, ready:false, restart:+k === 0 ? 2.2 : +k === 1 ? 2 : +k === 3 ? 5/6 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
       if (reduce || e.currentTarget !== l.v) return;
       const active = l.v, spare = l.spare;
       if (spare && l.primed && spare.readyState >= 2 && !spare.seeking && !spare.error){
-        /* Decode the next traffic, laser or entry-loop frame on a second video before exchanging players. */
+        /* Decode the next traffic, laser, crowd or entry-loop frame on a second video before exchanging players. */
         spare.style.opacity = active.style.opacity; spare.style.zIndex = active.style.zIndex;
         active.style.opacity = '0'; l.v = spare; l.spare = active; l.primed = false; l.playing = false;
         playLoop(l); primeEntryLoop(l);
       } else { active.currentTime = l.restart || 0; active.play().catch(() => {}); }
     };
     v.addEventListener('ended', repeat);
-    if ((+k === 0 || +k === 1 || +k === 4) && !reduce){
+    if ((+k === 0 || +k === 1 || +k === 3 || +k === 4) && !reduce){
       const spare = document.createElement('video'); spare.muted = true; spare.playsInline = true;
       spare.setAttribute('playsinline', ''); spare.preload = 'none'; spare.dataset.src = v.dataset.src;
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    fetch(+k === 0 ? 'loops/01-traffic.json' : +k === 1 ? 'loops/02-lasers.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
+    fetch(+k === 0 ? 'loops/01-traffic.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 3 ? 'loops/04-living.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
