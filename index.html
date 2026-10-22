@@ -116,7 +116,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
   if (/[?&]3d\b/.test(location.search) || (station && station !== '1')) return;
   const img = document.createElement('img'); img.id = 'aerial-firstpaint'; img.alt = '';
   img.src = 'stations/01-roswell.jpg'; img.fetchPriority = 'high';
-  img.style.cssText = 'opacity:1;inset:-3%;width:106%;height:106%;transform:translateX(0)';
+  img.style.cssText = 'opacity:1;inset:0;width:100%;height:100%';
   document.getElementById('photos').appendChild(img);
 })();
 </script>
@@ -840,10 +840,10 @@ const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current pho
 const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const img = (+k === 0 && document.getElementById('aerial-firstpaint')) || new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:!!(img.complete && img.naturalWidth), t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
-    if (+k === 0){ img.style.inset = '-3%'; img.style.width = '106%'; img.style.height = '106%'; }
+    if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-aerial' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
@@ -890,12 +890,11 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   { const pl = plates[to]; if (pl && !pl.img.src) pl.img.src = pl.src; }
   /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
      a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
-  /* One aerial-to-aerial handoff for Station 1 -> 2. The old flight morphs through the landscape,
-     and replays an approach before Station 2 starts; leave that clip out of this route. */
+  /* Station 1 -> 2 uses the clean forward-flight edit: its warped middle is removed. */
   const cleanAerial = from === 0 && to === 1;
   const SKIP_FILM = {4:1, 9:1};
-  const c = !cleanAerial && to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
-  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
+  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 180 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (c && !videoReady(c) && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 3600; return 3000 + 9000; } /* hold briefly while the clip loads */
   startTransition(videoReady(c) && !reduce ? c : null, now);
   return tr.dur; }
@@ -926,11 +925,11 @@ function updatePlates(now){
       tr.hold = p < 1;
     }
   }
-  if (tr && tr.cleanAerial && !videoReady(loops[tr.to]) && !loops[tr.to].v.error && now - tr.aerialWaitAt < 5000){ tr.t0 = now; p = 0; }
+  if (tr && tr.cleanAerial && !tr.clip && !videoReady(loops[tr.to]) && !loops[tr.to].v.error && now - tr.aerialWaitAt < 5000){ tr.t0 = now; p = 0; }
   if (tr && p >= 1){ if (tr.clip) tr.clip.v.pause();
     if (videoReady(loops[tr.to])) loops[tr.to].shownAt = now - 650;
     tr = null; arrivedAt = now; }
-  if (!tr && !reduce){ if (stop !== 0) warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
+  if (!tr && !reduce){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
   /* photos load on demand: this station and its neighbors */
   [stop - 1, stop, stop + 1].forEach(i => { const pl = plates[i]; if (pl && !pl.img.src) pl.img.src = pl.src; });
   let cover = false;
@@ -945,14 +944,14 @@ function updatePlates(now){
     if (!(!tr && i === stop)) pl.img.style.filter = '';
     if (a > 0 && !pl.ready) a = 0;
     if (a >= 0.999) cover = true;
-    /* A fixed-size photograph can drift sideways, but cannot ripple, orbit, or pulse in scale. */
-    if (i === 0){ sc = 1; tf = 'translateX(' + (reduce ? 0 : 1.5*Math.sin(now/60000)).toFixed(3) + '%)'; }
+    /* Match the clean flight's first frame without a crop or a synthetic camera effect. */
+    if (i === 0){ sc = 1; tf = ''; }
     pl.img.style.zIndex = tr && !tr.clip && i === tr.to ? '4' : '1';
     pl.img.style.opacity = a.toFixed(3); if (a > 0) pl.img.style.transform = tf + ' scale(' + sc.toFixed(4) + ')'; }
   const clipActive = tr && tr.clip;
   const filmMs = clipActive ? Math.max(1000, (tr.clip.v.duration || 4)*1000) : 0;
   const intro = clipActive ? smooth(0, Math.min(0.4, tr.fadeMs/filmMs), p) : 0;
-  const endFade = clipActive ? smooth(1 - Math.min(0.4, 900/filmMs), 1, p) : 0;
+  const endFade = clipActive ? smooth(1 - Math.min(0.4, (tr.cleanAerial ? 450 : 900)/filmMs), 1, p) : 0;
   if (clipActive){
     const pl = plates[tr.from];
     if (pl && pl.ready) pl.img.style.opacity = '1';
