@@ -838,10 +838,33 @@ if (PHOTO_MODE){
     v.dataset.src = 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const l = {v, ready:false};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
-    v.addEventListener('ended', () => { if (reduce) return; v.currentTime = l.restart || 0; v.play().catch(() => {}); });
-    fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; }).catch(() => {}); });
+    const repeat = e => {
+      if (reduce || e.currentTarget !== l.v) return;
+      const active = l.v, spare = l.spare;
+      if (spare && l.primed && spare.readyState >= 2 && !spare.seeking && !spare.error){
+        /* The entry queue keeps walking: its next frame is decoded on a second video. */
+        spare.style.opacity = active.style.opacity; spare.style.zIndex = active.style.zIndex;
+        active.style.opacity = '0'; l.v = spare; l.spare = active; l.primed = false; l.playing = false;
+        playLoop(l); primeEntryLoop(l);
+      } else { active.currentTime = l.restart || 0; active.play().catch(() => {}); }
+    };
+    v.addEventListener('ended', repeat);
+    if (+k === 4 && !reduce){
+      const spare = document.createElement('video'); spare.muted = true; spare.playsInline = true;
+      spare.setAttribute('playsinline', ''); spare.preload = 'none'; spare.dataset.src = v.dataset.src;
+      spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
+      $('photos').appendChild(spare); l.spare = spare;
+    }
+    fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; primeEntryLoop(l); }).catch(() => {}); });
 }
-function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){ l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load(); } }
+function primeEntryLoop(l){
+  if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
+  l.spare.pause(); l.spare.currentTime = l.restart; l.primed = true;
+}
+function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){
+  l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load();
+  if (l.spare){ l.spare.src = l.spare.dataset.src; l.spare.preload = 'auto'; l.spare.load(); }
+} }
 /* fetch the clip that leaves the current station, so Next can play it without waiting */
 if (PHOTO_MODE && !reduce) warmLoop(stop); /* Prioritize nearby media rather than downloading every film at once. */
 function warmClip(i){ const c = clips[i]; if (c && !c.v.src){ c.v.src = c.v.dataset.src; c.v.preload = 'auto'; c.v.load(); } }
@@ -927,7 +950,9 @@ function updatePlates(now){
     clips[k].v.style.opacity = on ? intro.toFixed(3) : '0';
   }
   for (const k in loops){ const l = loops[k], i = +k; let o = 0;
-    if (!reduce && videoReady(l)){
+    /* Retain the last decoded frame during a seek rather than flashing the still photo. */
+    const visibleFrame = l.ready && !l.v.error && Number(l.v.style.opacity) > 0;
+    if (!reduce && (videoReady(l) || visibleFrame)){
       if (!tr && i === stop){
         if (l.shownAt === undefined) l.shownAt = now;
         o = smooth(0, 650, now - l.shownAt);
