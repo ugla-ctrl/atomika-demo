@@ -843,12 +843,12 @@ if (PHOTO_MODE){
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = (i === 0 ? 'transitions/01-02-aerial' : i === 1 ? 'transitions/02-03-aerial' : i === 3 ? 'transitions/04-05-walk' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-aerial' : i === 1 ? 'transitions/02-03-aerial' : i === 2 ? 'transitions/03-04-clear' : i === 3 ? 'transitions/04-05-walk' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
-    v.dataset.src = (+k === 0 ? 'loops/01-traffic' : +k === 1 ? 'loops/02-lasers' : +k === 3 ? 'loops/04-road-motion' : +k === 4 ? 'loops/05-natural' : +k === 5 ? 'loops/06-guide' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    v.dataset.src = (+k === 0 ? 'loops/01-traffic' : +k === 1 ? 'loops/02-lasers' : +k === 3 ? 'loops/04-clear' : +k === 4 ? 'loops/05-natural' : +k === 5 ? 'loops/06-guide' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
     const l = {v, ready:false, restart:+k === 0 ? 2.2 : +k === 1 ? 2 : +k === 3 ? 0.5 : +k === 4 ? 0.5 : +k === 5 ? 0.6 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
@@ -869,7 +869,7 @@ if (PHOTO_MODE){
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    fetch(+k === 0 ? 'loops/01-traffic.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 3 ? 'loops/04-road-motion.json' : +k === 4 ? 'loops/05-natural.json' : +k === 5 ? 'loops/06-guide.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
+    fetch(+k === 0 ? 'loops/01-traffic.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 3 ? 'loops/04-clear.json' : +k === 4 ? 'loops/05-natural.json' : +k === 5 ? 'loops/06-guide.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
@@ -891,10 +891,10 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
      a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
   /* Station 1 -> 2 continues along the road through the original approach and arrival. */
-  const cleanAerial = from === 0 && to === 1, siteRoute = from === 3 && to === 4;
+  const cleanAerial = from === 0 && to === 1;
   const SKIP_FILM = {4:1, 9:1};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
-  tr = {from, to, cleanAerial, siteRoute, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: siteRoute ? 250 : cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 2.2)){
     warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + 5000; tr.dur = 9000;
     return tr.dur;
@@ -903,29 +903,12 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   startTransition(videoReady(c) && !reduce ? c : null, now);
   return tr.dur; }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
-  /* The road dwell and departure share the same source: continue at the visible source time.
-     Wait out only the half-second repeat dissolve so it never becomes the route's first frame. */
-  if (c && tr.siteRoute && videoReady(loops[3]) && loops[3].v.currentTime >= 2.75){
-    tr.pendingSiteRoute = true; tr.siteDeadline = now + 1500; tr.dur = 12000; return;
-  }
-  tr.pendingSiteRoute = false;
-  const filmStart = c && tr.siteRoute && videoReady(loops[3]) ? loops[3].v.currentTime : 0;
-  if (c){ tr.clip = c; c.v.currentTime = filmStart; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
+  if (c){ tr.clip = c; c.v.currentTime = 0; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
   else { tr.clip = null; tr.dur = reduce ? 350 : (tr.cleanAerial ? 1200 : 4200); }
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
 function updatePlates(now){
   if (!PHOTO_MODE){ photoCover = false; return; }
   const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
-  if (tr && tr.pendingSiteRoute){
-    const road = loops[3];
-    if ((videoReady(road) && road.v.currentTime < 2.75) || now > tr.siteDeadline){
-      if (now > tr.siteDeadline) tr.siteRoute = false;
-      startTransition(videoReady(clips[3]) ? clips[3] : null, now);
-    } else {
-      if (videoReady(road)){ road.v.style.opacity = '1'; road.v.style.zIndex = '2'; playLoop(road); }
-      photoCover = true; canvas.style.opacity = '0'; return;
-    }
-  }
   if (tr && tr.pendingRoad){
     const road = loops[0];
     if ((videoReady(road) && road.v.currentTime >= (road.roadStart || 2.2)) || now > tr.roadDeadline){
