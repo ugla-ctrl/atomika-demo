@@ -843,7 +843,7 @@ if (PHOTO_MODE){
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = (i === 0 ? 'transitions/01-02-aerial' : i === 1 ? 'transitions/02-03-road-route' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-aerial' : i === 1 ? 'transitions/02-03-aerial' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
