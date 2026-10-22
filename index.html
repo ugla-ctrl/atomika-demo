@@ -829,13 +829,17 @@ const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current pho
 const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
+    if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const l = {v, ready:false};
+    /* Station 1 uses the untouched overhead shot; the processed loop adds a visible warp at its join. */
+    v.dataset.src = +k === 0 ? 'concepts/transitions/01-dwell-veo-1080p.mp4' : 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    if (+k === 0) v.loop = true;
+    const l = {v, ready:false};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
@@ -876,17 +880,18 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   { const pl = plates[to]; if (pl && !pl.img.src) pl.img.src = pl.src; }
   /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
      a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
-  /* Stations 6 and 11 rest on their arrival films; avoid replaying those.
-     Station 2 still needs its Roswell-to-Approach arrival film. */
+  /* One aerial-to-aerial handoff for Station 1 -> 2. The old flight morphs through the landscape,
+     and replays an approach before Station 2 starts; leave that clip out of this route. */
+  const cleanAerial = from === 0 && to === 1;
   const SKIP_FILM = {4:1, 9:1};
-  const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
-  tr = {from, to, t0:now, clip:null, fadeIn: true, fadeMs: (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  const c = !cleanAerial && to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
+  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (c && !videoReady(c) && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 3600; return 3000 + 9000; } /* hold briefly while the clip loads */
   startTransition(videoReady(c) && !reduce ? c : null, now);
   return tr.dur; }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
   if (c){ tr.clip = c; c.v.currentTime = 0; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
-  else { tr.clip = null; tr.dur = reduce ? 350 : 4200; }
+  else { tr.clip = null; tr.dur = reduce ? 350 : (tr.cleanAerial ? 1200 : 4200); }
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
 function updatePlates(now){
   if (!PHOTO_MODE){ photoCover = false; return; }
@@ -911,8 +916,11 @@ function updatePlates(now){
       tr.hold = p < 1;
     }
   }
-  if (tr && p >= 1){ if (tr.clip) tr.clip.v.pause(); tr = null; arrivedAt = now; }
-  if (!tr && !reduce){ warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
+  if (tr && tr.cleanAerial && !videoReady(loops[tr.to]) && !loops[tr.to].v.error && now - tr.aerialWaitAt < 5000){ tr.t0 = now; p = 0; }
+  if (tr && p >= 1){ if (tr.clip) tr.clip.v.pause();
+    if (videoReady(loops[tr.to])) loops[tr.to].shownAt = now - 650;
+    tr = null; arrivedAt = now; }
+  if (!tr && !reduce){ if (stop !== 0) warmClip(stop); warmLoop(stop); warmLoop(stop + 1); warmLoop(stop - 1); }
   /* photos load on demand: this station and its neighbors */
   [stop - 1, stop, stop + 1].forEach(i => { const pl = plates[i]; if (pl && !pl.img.src) pl.img.src = pl.src; });
   let cover = false;
@@ -927,6 +935,7 @@ function updatePlates(now){
     if (!(!tr && i === stop)) pl.img.style.filter = '';
     if (a > 0 && !pl.ready) a = 0;
     if (a >= 0.999) cover = true;
+    if (i === 0){ sc = 1; tf = ''; }
     pl.img.style.zIndex = tr && !tr.clip && i === tr.to ? '4' : '1';
     pl.img.style.opacity = a.toFixed(3); if (a > 0) pl.img.style.transform = tf + ' scale(' + sc.toFixed(4) + ')'; }
   const clipActive = tr && tr.clip;
