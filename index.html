@@ -847,35 +847,35 @@ if (PHOTO_MODE){
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    /* Station 1 is a plain aerial photograph; it never loads a video or a warped loop. */
-    v.dataset.src = +k === 0 ? '' : 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
-    const l = {v, ready:false};
+    /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
+    v.dataset.src = (+k === 0 ? 'loops/01-traffic' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    const l = {v, ready:false, restart:+k === 0 ? 3.75 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
       if (reduce || e.currentTarget !== l.v) return;
       const active = l.v, spare = l.spare;
       if (spare && l.primed && spare.readyState >= 2 && !spare.seeking && !spare.error){
-        /* The entry queue keeps walking: its next frame is decoded on a second video. */
+        /* Decode the next traffic/entry-loop frame on a second video before exchanging players. */
         spare.style.opacity = active.style.opacity; spare.style.zIndex = active.style.zIndex;
         active.style.opacity = '0'; l.v = spare; l.spare = active; l.primed = false; l.playing = false;
         playLoop(l); primeEntryLoop(l);
       } else { active.currentTime = l.restart || 0; active.play().catch(() => {}); }
     };
     v.addEventListener('ended', repeat);
-    if (+k === 4 && !reduce){
+    if ((+k === 0 || +k === 4) && !reduce){
       const spare = document.createElement('video'); spare.muted = true; spare.playsInline = true;
       spare.setAttribute('playsinline', ''); spare.preload = 'none'; spare.dataset.src = v.dataset.src;
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    if (+k !== 0) fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; primeEntryLoop(l); }).catch(() => {}); });
+    fetch(+k === 0 ? 'loops/01-traffic.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
   l.spare.pause(); l.spare.currentTime = l.restart; l.primed = true;
 }
-function warmLoop(k){ if (+k === 0) return; const l = loops[k]; if (l && !l.v.src){
+function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){
   l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load();
   if (l.spare){ l.spare.src = l.spare.dataset.src; l.spare.preload = 'auto'; l.spare.load(); }
 } }
@@ -895,6 +895,10 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   const SKIP_FILM = {4:1, 9:1};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
   tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 180 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 2.2)){
+    warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + 5000; tr.dur = 9000;
+    return tr.dur;
+  }
   if (c && !videoReady(c) && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + 3000; tr.dur = 3600; return 3000 + 9000; } /* hold briefly while the clip loads */
   startTransition(videoReady(c) && !reduce ? c : null, now);
   return tr.dur; }
@@ -905,6 +909,17 @@ function startTransition(c, now){ tr.t0 = now; tr.pending = null;
 function updatePlates(now){
   if (!PHOTO_MODE){ photoCover = false; return; }
   const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
+  if (tr && tr.pendingRoad){
+    const road = loops[0];
+    if ((videoReady(road) && road.v.currentTime >= (road.roadStart || 2.2)) || now > tr.roadDeadline){
+      tr.pendingRoad = false;
+      if (videoReady(clips[0])) startTransition(clips[0], now);
+      else { tr.pending = clips[0]; tr.waitUntil = now + 3000; }
+    } else {
+      if (videoReady(road)){ road.v.style.opacity = '1'; road.v.style.zIndex = '2'; playLoop(road); }
+      photoCover = true; canvas.style.opacity = '0'; return;
+    }
+  }
   if (tr && tr.pending){
     if (videoReady(tr.pending) || tr.pending.v.error || now > tr.waitUntil) startTransition(videoReady(tr.pending) ? tr.pending : null, now);
     else {
