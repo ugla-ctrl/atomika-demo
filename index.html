@@ -849,7 +849,7 @@ if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
     v.dataset.src = (+k === 0 ? 'loops/01-traffic' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
-    const l = {v, ready:false, restart:+k === 0 ? 3.75 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
+    const l = {v, ready:false, restart:+k === 0 ? 2.2 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
@@ -890,11 +890,11 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   { const pl = plates[to]; if (pl && !pl.img.src) pl.img.src = pl.src; }
   /* moving forward always arrives on film: the clip that ends at the destination. One step: it starts exactly where we are;
      a longer jump: dissolve into it from the current photo. Going back uses the slow photo dissolve. */
-  /* Station 1 -> 2 uses the clean forward-flight edit: its warped middle is removed. */
+  /* Station 1 -> 2 continues along the road through the original approach and arrival. */
   const cleanAerial = from === 0 && to === 1;
   const SKIP_FILM = {4:1, 9:1};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
-  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 180 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 2.2)){
     warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + 5000; tr.dur = 9000;
     return tr.dur;
