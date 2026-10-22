@@ -109,6 +109,17 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 <body>
 <div id="stage"><canvas id="c" tabindex="0" aria-label="3D view of the Twistflower missile site. Drag to look around; use the Next and Back buttons to move between stations."></canvas></div>
 <div id="photos" aria-hidden="true"></div>
+<script>
+/* Show Roswell before the 3D engine initializes; there is no video to wait for. */
+(function(){
+  const station = new URLSearchParams(location.search).get('station');
+  if (/[?&]3d\b/.test(location.search) || (station && station !== '1')) return;
+  const img = document.createElement('img'); img.id = 'aerial-firstpaint'; img.alt = '';
+  img.src = 'stations/01-roswell.jpg'; img.fetchPriority = 'high';
+  img.style.cssText = 'opacity:1;inset:-3%;width:106%;height:106%;transform:translateX(0)';
+  document.getElementById('photos').appendChild(img);
+})();
+</script>
 <div id="labels" aria-hidden="false"></div>
 
 <header class="top">
@@ -828,17 +839,16 @@ const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];  /* station indexes i that have tr
 const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current photo: dissolve into them instead of cutting */
 const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
 if (PHOTO_MODE){
-  Object.keys(PHOTOS).forEach(k => { const img = new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:false, t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
-    if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
+  Object.keys(PHOTOS).forEach(k => { const img = (+k === 0 && document.getElementById('aerial-firstpaint')) || new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:!!(img.complete && img.naturalWidth), t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
+    if (+k === 0){ img.style.inset = '-3%'; img.style.width = '106%'; img.style.height = '106%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     v.dataset.src = 'transitions/' + pad2(i+1) + '-' + pad2(i+2) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    /* Station 1 uses the untouched overhead shot; the processed loop adds a visible warp at its join. */
-    v.dataset.src = +k === 0 ? 'concepts/transitions/01-dwell-veo-1080p.mp4' : 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
-    if (+k === 0) v.loop = true;
+    /* Station 1 is a plain aerial photograph; it never loads a video or a warped loop. */
+    v.dataset.src = +k === 0 ? '' : 'loops/' + pad2(+k + 1) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
     const l = {v, ready:false};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
@@ -859,13 +869,13 @@ if (PHOTO_MODE){
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; primeEntryLoop(l); }).catch(() => {}); });
+    if (+k !== 0) fetch('loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
   l.spare.pause(); l.spare.currentTime = l.restart; l.primed = true;
 }
-function warmLoop(k){ const l = loops[k]; if (l && !l.v.src){
+function warmLoop(k){ if (+k === 0) return; const l = loops[k]; if (l && !l.v.src){
   l.v.src = l.v.dataset.src; l.v.preload = 'auto'; l.v.load();
   if (l.spare){ l.spare.src = l.spare.dataset.src; l.spare.preload = 'auto'; l.spare.load(); }
 } }
@@ -927,7 +937,7 @@ function updatePlates(now){
   for (const k in plates){ const pl = plates[k], i = +k; let a = 0, sc = 1, tf = '';
     if (tr && !tr.clip){ const lv = !reduce && videoReady(loops[tr.from]) && videoReady(loops[tr.to]);   /* video to video when both stitches are here */
       if (i === tr.from){ a = 1; sc = reduce ? 1 : 1.04; }
-      else if (i === tr.to){ a = lv ? 0 : smooth(0.15, 0.85, p); sc = reduce ? 1 : 1.04; }
+      else if (i === tr.to){ a = (lv || (tr.cleanAerial && videoReady(loops[tr.to]))) ? 0 : smooth(0.15, 0.85, p); sc = reduce ? 1 : 1.04; }
     } else if (!tr && i === stop){ a = 1;
       /* Keep the photographic fallback still while the station footage loads. */
       sc = reduce ? 1 : 1.04; tf = reduce ? '' : pan(yaw/1.1, pitch/0.7);   /* no synthetic motion: the footage itself carries the life */
@@ -935,7 +945,8 @@ function updatePlates(now){
     if (!(!tr && i === stop)) pl.img.style.filter = '';
     if (a > 0 && !pl.ready) a = 0;
     if (a >= 0.999) cover = true;
-    if (i === 0){ sc = 1; tf = ''; }
+    /* A fixed-size photograph can drift sideways, but cannot ripple, orbit, or pulse in scale. */
+    if (i === 0){ sc = 1; tf = 'translateX(' + (reduce ? 0 : 1.5*Math.sin(now/60000)).toFixed(3) + '%)'; }
     pl.img.style.zIndex = tr && !tr.clip && i === tr.to ? '4' : '1';
     pl.img.style.opacity = a.toFixed(3); if (a > 0) pl.img.style.transform = tf + ' scale(' + sc.toFixed(4) + ')'; }
   const clipActive = tr && tr.clip;
