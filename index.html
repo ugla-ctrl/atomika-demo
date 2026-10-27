@@ -984,7 +984,8 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   const cleanAerial = from === 0 && to === 1;
   const SKIP_FILM = {9:1};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
-  tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  const festivalFlight = from === 1 && to === 2;
+  tr = {from, to, cleanAerial, festivalFlight, clipStart:festivalFlight ? 0.6 : 0, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: festivalFlight ? 300 : cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 10.8)){
     warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + Math.max(5000,((loops[0].roadStart || 10.8)-loops[0].v.currentTime)*1000+2000); tr.dur = tr.roadDeadline-now+9000;
     return tr.dur;
@@ -1000,7 +1001,7 @@ function startInitialStationEntry(){
   warmLoop(4); photoTransition(4, 5);
 }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
-  if (c){ tr.clip = c; c.v.currentTime = 0; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
+  if (c){ tr.clip = c; c.v.currentTime = tr.clipStart || 0; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
   else { tr.clip = null; tr.dur = reduce ? 350 : (tr.cleanAerial ? 1200 : 4200); }
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
 function updatePlates(now){
@@ -1062,7 +1063,7 @@ function updatePlates(now){
     pl.img.style.opacity = a.toFixed(3); if (a > 0) pl.img.style.transform = tf + ' scale(' + sc.toFixed(4) + ')'; }
   const clipActive = tr && tr.clip;
   const filmMs = clipActive ? Math.max(1000, (tr.clip.v.duration || 4)*1000) : 0;
-  const intro = clipActive ? smooth(0, Math.min(0.4, tr.fadeMs/filmMs), p) : 0;
+  const intro = clipActive ? (tr.festivalFlight ? smooth(0, tr.fadeMs, Math.max(0, tr.clip.v.currentTime - tr.clipStart)*1000) : smooth(0, Math.min(0.4, tr.fadeMs/filmMs), p)) : 0;
   const endFade = clipActive ? smooth(1 - Math.min(0.4, (tr.cleanAerial ? 450 : 900)/filmMs), 1, p) : 0;
   if (clipActive){
     const pl = plates[tr.from];
@@ -1074,6 +1075,15 @@ function updatePlates(now){
     /* Decode the arrival frame before compositing it over the film. */
     const l = loops[tr.to];
     if (l && !l.armed && p > 0.5){ l.armed = true; l.v.pause(); l.v.currentTime = 0; }
+    /* Station 3 begins with the flight's final 27 frames. Keep those frames
+       aligned if either decoder stalls, rather than playing two clocks apart. */
+    if (tr.festivalFlight && l && l.armed && endFade > 0){
+      const arrivalTime = Math.max(0, tr.clip.v.currentTime - (tr.clip.v.duration - 0.9));
+      if (!l.v.seeking && Math.abs(l.v.currentTime - arrivalTime) > 0.1) l.v.currentTime = arrivalTime;
+      if (tr.lastFlightTime !== tr.clip.v.currentTime) tr.lastFlightChangeAt = now;
+      tr.arrivalStalled = now - tr.lastFlightChangeAt > 100;
+      tr.lastFlightTime = tr.clip.v.currentTime;
+    }
   }
   for (const k in clips){
     const on = !!(tr && tr.clip === clips[k]);
@@ -1092,7 +1102,8 @@ function updatePlates(now){
       else if (tr && i === tr.to) o = tr.clip ? endFade : smooth(0.15, 0.85, p);
     }
     l.v.style.zIndex = tr && i === tr.from ? '2' : '5';
-    if (o > 0 || (!tr && i === stop && videoReady(l))){ playLoop(l); }
+    if (tr && tr.festivalFlight && i === tr.to && tr.arrivalStalled){ l.v.pause(); }
+    else if (o > 0 || (!tr && i === stop && videoReady(l))){ playLoop(l); }
     else { if (!l.v.paused) l.v.pause(); }
     if (o >= 0.999) cover = true;
     l.v.style.opacity = o.toFixed(3);
