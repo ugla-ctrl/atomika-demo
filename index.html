@@ -9,20 +9,20 @@
 <meta name="theme-color" content="#000000">
 <link rel="icon" type="image/png" href="https://www.atomikafest.com/images/favicon.png">
 <link rel="apple-touch-icon" href="https://www.atomikafest.com/images/favicon.png">
-<link rel="canonical" href="https://demo.atomikafest.com/">
+<link rel="canonical" href="https://demo.atomikaroswell.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ATOMIKA">
-<meta property="og:url" content="https://demo.atomikafest.com/">
+<meta property="og:url" content="https://demo.atomikaroswell.com/">
 <meta property="og:title" content="Enter the Silo | ATOMIKA">
 <meta property="og:description" content="An interactive descent into the Twistflower missile silo near Roswell, New Mexico. ATOMIKA, May 7-9, 2027.">
-<meta property="og:image" content="https://demo.atomikafest.com/og.png">
+<meta property="og:image" content="https://demo.atomikaroswell.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="A festival crowd around the open doors of the Twistflower silo at night, laser beams rising into the starry desert sky.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Enter the Silo | ATOMIKA">
 <meta name="twitter:description" content="An interactive descent into the Twistflower missile silo near Roswell, New Mexico.">
-<meta name="twitter:image" content="https://demo.atomikafest.com/og.png">
+<meta name="twitter:image" content="https://demo.atomikaroswell.com/og.png">
 <style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}[hidden]{display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -55,12 +55,14 @@ body{font-family:var(--display);-webkit-font-smoothing:antialiased}
 .sound{pointer-events:auto;cursor:pointer;min-height:34px;padding:0 12px;border-radius:999px;background:var(--orange);color:#000;border:0;font-family:var(--mono);font-size:11px;letter-spacing:.06em}
 .sound[aria-pressed="true"]{background:var(--panel);color:var(--fg);border:1px solid var(--line)}
 .sound:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.card{position:fixed;z-index:6;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));
+.card{max-height:calc(100dvh - 88px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;position:fixed;z-index:6;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));
   width:min(430px,calc(100vw - 32px));box-sizing:border-box;background:var(--panel);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
   border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
 h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;font-stretch:112%;letter-spacing:-.02em;text-wrap:balance}
 #desc{margin:0;font-size:16px;line-height:1.35;color:#C9C9C9;text-wrap:pretty;max-width:60ch}
+#scene-backdrop{display:none}
+.station-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}.station-picker{display:none}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .dots{display:flex;gap:4px}
 .dots button{flex:1 1 0;height:14px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center}
 .dots button::before{content:"";display:block;width:100%;height:3px;border-radius:2px;background:#2E2E2E}
@@ -75,14 +77,37 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 .btn.primary:hover{background:#FF9440}
 .btn.link{flex:1 1 auto;background:var(--blue);color:#fff;border:0}
 .hint{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:#7C7C7C}
-.rail{position:fixed;z-index:6;right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px}
-.rail button{display:flex;gap:10px;align-items:center;justify-content:flex-end;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:#8A8A8A;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;text-align:right}
+.rail{max-height:calc(100dvh - 132px);overflow-y:auto;overscroll-behavior:contain;position:fixed;z-index:6;right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px}
+.rail button{display:flex;gap:10px;align-items:center;justify-content:flex-end;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:#8A8A8A;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;text-align:right}
 .rail button .n{font-family:var(--mono);font-weight:400;font-size:11px}
 .rail button[aria-current="step"]{color:#fff;background:var(--panel);border-color:var(--line)}
 .rail button[aria-current="step"] .n{color:var(--cyan)}
 .rail button:hover{color:#fff}
 .rail button:focus-visible{outline:2px solid var(--cyan)}
-@media (max-width:899px){.rail{display:none}}
+@media (max-width:899px){
+ .rail{display:none}
+ .station-picker{display:block;flex:none}
+ .station-picker select{width:112px;min-height:44px;border:1px solid var(--line);border-radius:999px;background:#151515;color:var(--fg);font:500 12px var(--display);padding:0 10px;cursor:pointer}
+ .station-picker select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+ .dots{display:none}
+ .top{gap:8px;padding-top:calc(10px + env(safe-area-inset-top,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+ .top svg{height:14px}
+ .readout{gap:4px;font-size:9px;letter-spacing:.02em}
+ .readout span{padding:5px 7px}
+ .sound{min-height:44px;padding:0 8px;font-size:9px;letter-spacing:.02em}
+ .pill-proto{display:none}
+ .card{left:max(12px,env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(410px,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));padding:14px;gap:8px;border-radius:16px}
+ .eyebrow{font-size:9px;line-height:1.5;letter-spacing:.04em}
+ h1{font-size:clamp(25px,6vw,32px);line-height:1.03}
+ #desc{font-size:14px;line-height:1.4}
+ .row{flex-wrap:wrap}
+ .row #next{flex:1 1 0}
+ .row #cta{flex-basis:100%}
+ .btn{font-size:14px;min-width:0}
+ .btn.ghost{padding:0 16px}
+ .btn.primary{padding:0 12px}
+ .hint{font-size:9px;line-height:1.4;letter-spacing:.02em}
+}
 @media (max-width:420px){.readout .pill-proto{display:none}}
 @media (pointer:coarse){.dots button{height:28px}.sound{min-height:44px}}
 #labels{position:fixed;inset:0;pointer-events:none;z-index:4}
@@ -93,6 +118,22 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 #photos video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;background:#000}
 #photos video{will-change:opacity;transform-origin:50% 50%}
 @media (prefers-reduced-motion:reduce){#photos img{inset:0;width:100%;height:100%}}
+/* A portrait screen shows the complete filmed route above its controls. */
+@media (max-width:899px) and (orientation:portrait){
+ #scene-backdrop{display:block;position:fixed;inset:-24px;z-index:1;background-size:cover;background-position:center;filter:blur(22px) brightness(.32) saturate(.65);pointer-events:none}
+ #photos{background:transparent;top:calc(62px + env(safe-area-inset-top,0px));bottom:calc(var(--card-height,290px) + 28px + env(safe-area-inset-bottom,0px))}
+ #photos video,#photos img{object-fit:contain;object-position:50% 50%;background:transparent}
+ #photos img{inset:0;width:100%;height:100%;transform:none!important}
+ .card{width:calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));max-height:56dvh}
+}
+@media (max-height:520px) and (orientation:landscape){
+ .card{width:min(340px,calc(100vw - 24px));padding:12px;gap:6px;max-height:calc(100dvh - 76px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+ .station-heading .eyebrow{font-size:9px}
+ h1{font-size:25px}
+ #desc{font-size:13px}
+ .hint{display:none}
+}
+
 .tag{position:absolute;left:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:6px;transform:translate(-50%,-100%);white-space:nowrap;
   font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--cyan);background:rgba(0,0,0,.72);border:1px solid rgba(1,207,254,.55);border-radius:999px;padding:6px 10px;cursor:default;transition:opacity .25s}
 .tag.go{cursor:pointer;background:var(--cyan);color:#000;border-color:var(--cyan)}
@@ -122,6 +163,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 </script>
 <div id="labels" aria-hidden="false"></div>
 
+<div id="scene-backdrop" aria-hidden="true"></div>
 <header class="top">
   <span aria-label="ATOMIKA"><svg aria-hidden="true" focusable="false" width="153" height="24" viewBox="0 0 153 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M152.44 4.22C152.74 4.22 152.99 4.46 152.99 4.77V7.56C152.99 7.87 152.74 8.11 152.44 8.11H140.86C140.41 8.11 140.15 7.60 140.41 7.24L141.03 6.39C141.3 6.02 141.03 5.51 140.58 5.51H128.33C128.03 5.51 127.78 5.76 127.78 6.06V7.56C127.78 7.86 127.54 8.11 127.23 8.11H110.33C110.16 8.11 110.01 8.03 109.90 7.91L108.08 5.71C107.98 5.58 107.82 5.51 107.66 5.51H103.21C102.90 5.51 102.65 5.76 102.65 6.06V7.56C102.65 7.86 102.41 8.11 102.10 8.11H94.20C93.89 8.11 93.65 7.86 93.65 7.56V6.06C93.65 5.76 93.40 5.51 93.09 5.51H92.00C91.70 5.51 91.45 5.76 91.45 6.06V7.56C91.45 7.86 91.20 8.11 90.90 8.11H80.27C79.78 8.11 79.53 7.51 79.88 7.17L80.60 6.45C80.95 6.11 80.70 5.51 80.21 5.51H76.93C76.44 5.51 76.19 6.11 76.54 6.45L77.26 7.17C77.60 7.52 77.36 8.11 76.87 8.11H65.93C65.63 8.11 65.38 7.87 65.38 7.56V6.07C65.38 5.76 65.14 5.52 64.83 5.52H63.24C62.83 5.52 62.57 5.95 62.75 6.32C62.91 6.66 63.06 7.01 63.20 7.37C63.33 7.73 63.06 8.11 62.67 8.11H41.25C40.87 8.11 40.60 7.73 40.73 7.37C40.86 7.01 41.01 6.66 41.18 6.32C41.36 5.95 41.10 5.52 40.69 5.52C40.38 5.52 40.14 5.76 40.14 6.07V7.56C40.14 7.87 39.89 8.11 39.58 8.11H20.03C19.73 8.11 19.48 7.87 19.48 7.56V6.07C19.48 5.76 19.23 5.52 18.93 5.52H12.43C11.98 5.52 11.71 6.03 11.98 6.39L12.60 7.24C12.86 7.60 12.60 8.11 12.15 8.11H0.55C0.24 8.11 0 7.87 0 7.56V4.77C0 4.47 0.24 4.22 0.55 4.22H152.44V4.22ZM0.55 9.41C0.24 9.41 0 9.66 0 9.96V12.76C0 13.06 0.24 13.31 0.55 13.31H15.93C16.38 13.31 16.65 12.79 16.38 12.43L15.76 11.58C15.50 11.22 15.76 10.71 16.21 10.71H24.74C25.05 10.71 25.29 10.95 25.29 11.26V12.75C25.29 13.06 25.54 13.30 25.85 13.30H33.78C34.08 13.30 34.33 13.06 34.33 12.75V11.26C34.33 10.95 34.58 10.71 34.88 10.71H39.40C39.72 10.71 39.97 10.97 39.95 11.28C39.94 11.52 39.94 11.75 39.94 12C39.94 12.26 39.94 12.52 39.96 12.78C39.97 13.07 40.21 13.31 40.51 13.31H49.00C49.34 13.31 49.61 12.99 49.54 12.66C49.50 12.45 49.47 12.23 49.47 12C49.47 11.67 49.52 11.36 49.61 11.08C49.68 10.85 49.90 10.71 50.13 10.71H53.80C54.04 10.71 54.25 10.86 54.32 11.08C54.41 11.36 54.46 11.67 54.46 12C54.46 12.23 54.44 12.45 54.40 12.66C54.32 12.99 54.59 13.31 54.94 13.31H63.43C63.72 13.31 63.96 13.07 63.98 12.78C63.99 12.52 64.00 12.26 64.00 12C64.00 11.75 63.99 11.52 63.98 11.28C63.97 10.97 64.22 10.71 64.53 10.71H64.83C65.13 10.71 65.38 10.95 65.38 11.26V12.75C65.38 13.06 65.63 13.30 65.93 13.30H90.90C91.21 13.30 91.45 13.06 91.45 12.75V11.26C91.45 10.95 91.70 10.71 92.01 10.71H93.10C93.40 10.71 93.65 10.95 93.65 11.26V12.75C93.65 13.06 93.90 13.30 94.20 13.30H102.11C102.41 13.30 102.66 13.06 102.66 12.75V11.26C102.66 10.95 102.91 10.71 103.21 10.71H111.59C112.04 10.71 112.30 11.22 112.04 11.58L111.42 12.43C111.15 12.79 111.41 13.30 111.87 13.30H127.25C127.55 13.30 127.80 13.06 127.80 12.75V11.26C127.80 10.95 128.04 10.71 128.35 10.71H136.81C137.26 10.71 137.52 11.22 137.26 11.58L136.64 12.43C136.37 12.79 136.64 13.31 137.09 13.31H152.44C152.75 13.31 153 13.06 153 12.76V9.96C153 9.66 152.75 9.41 152.44 9.41H0.55ZM127.78 2.36V0.84C127.78 0.53 127.53 0.29 127.23 0.29H119.32C119.02 0.29 118.77 0.53 118.77 0.84V2.36C118.77 2.67 119.02 2.91 119.32 2.91H127.23C127.54 2.91 127.78 2.67 127.78 2.36ZM152.44 14.61H0.55C0.24 14.61 0 14.85 0 15.16V17.95C0 18.25 0.24 18.50 0.55 18.50H19.71C20.16 18.50 20.43 17.99 20.16 17.63L19.54 16.78C19.28 16.41 19.54 15.90 19.99 15.90H24.74C25.04 15.90 25.29 16.15 25.29 16.45V17.95C25.29 18.25 25.54 18.50 25.84 18.50H33.78C34.08 18.50 34.33 18.25 34.33 17.95V16.45C34.33 16.15 34.58 15.90 34.88 15.90H40.09C40.33 15.90 40.54 16.06 40.61 16.29C40.84 16.97 41.13 17.61 41.47 18.22C41.56 18.39 41.75 18.50 41.95 18.50H61.98C62.18 18.50 62.36 18.40 62.46 18.22C62.80 17.61 63.09 16.97 63.32 16.29C63.39 16.06 63.60 15.90 63.84 15.90H64.82C65.12 15.90 65.37 16.15 65.37 16.45V17.95C65.37 18.25 65.61 18.50 65.92 18.50H73.94C74.24 18.50 74.49 18.25 74.49 17.95V16.45C74.49 16.15 74.73 15.90 75.04 15.90H75.59C75.74 15.90 75.88 15.96 75.99 16.07L78.03 18.13C78.24 18.34 78.6 18.34 78.81 18.13L80.88 16.06C80.99 15.96 81.13 15.90 81.27 15.90H81.86C82.16 15.90 82.41 16.15 82.41 16.45V17.94C82.41 18.25 82.66 18.49 82.96 18.49H90.90C91.20 18.49 91.45 18.25 91.45 17.94V16.45C91.45 16.15 91.70 15.90 92.00 15.90H93.09C93.40 15.90 93.65 16.15 93.65 16.45V17.94C93.65 18.25 93.89 18.49 94.20 18.49H102.10C102.41 18.49 102.65 18.25 102.65 17.94V16.45C102.65 16.15 102.90 15.90 103.21 15.90H107.79C108.24 15.90 108.50 16.41 108.24 16.77L107.62 17.62C107.35 17.98 107.61 18.49 108.06 18.49H127.24C127.55 18.49 127.8 18.25 127.8 17.94V16.45C127.8 16.15 128.04 15.90 128.35 15.90H133.01C133.46 15.90 133.73 16.41 133.46 16.77L132.84 17.62C132.58 17.99 132.84 18.50 133.29 18.50H152.43C152.74 18.50 152.98 18.25 152.98 17.95V15.15C152.98 14.85 152.74 14.60 152.43 14.60L152.44 14.61ZM152.99 2.37V0.84C152.99 0.54 152.74 0.29 152.44 0.29H145.75C145.58 0.29 145.41 0.37 145.31 0.52L144.2 2.04C143.93 2.41 144.19 2.92 144.64 2.92H152.44C152.74 2.92 152.99 2.67 152.99 2.37ZM115.94 2.04L114.83 0.52C114.72 0.37 114.56 0.29 114.38 0.29H104.77C104.30 0.29 104.04 0.83 104.34 1.19L105.61 2.72C105.71 2.85 105.87 2.92 106.03 2.92H115.5C115.95 2.92 116.21 2.41 115.94 2.04ZM0.55 19.80C0.24 19.80 0 20.05 0 20.35V23.15C0 23.46 0.24 23.70 0.55 23.70H8.51C8.82 23.70 9.06 23.46 9.06 23.15V21.65C9.06 21.35 9.31 21.10 9.61 21.10H11.12C11.30 21.10 11.47 21.19 11.58 21.34L13.01 23.46C13.11 23.61 13.28 23.70 13.47 23.70H23.51C23.96 23.70 24.22 23.19 23.95 22.83L23.33 21.97C23.06 21.61 23.33 21.10 23.78 21.10H24.74C25.05 21.10 25.29 21.35 25.29 21.65V23.15C25.29 23.46 25.54 23.70 25.85 23.70H33.78C34.08 23.70 34.33 23.46 34.33 23.15V21.65C34.33 21.35 34.58 21.10 34.88 21.10H43.58C43.71 21.10 43.83 21.15 43.93 21.23C46.00 22.99 48.77 24 51.97 24C55.17 24 57.93 22.99 60.00 21.23C60.10 21.15 60.22 21.10 60.36 21.10H64.81C65.12 21.10 65.37 21.35 65.37 21.65V23.15C65.37 23.45 65.61 23.70 65.92 23.70H73.94C74.24 23.70 74.49 23.45 74.49 23.15V21.65C74.49 21.34 74.74 21.10 75.04 21.10H81.86C82.17 21.10 82.41 21.34 82.41 21.65V23.15C82.41 23.45 82.66 23.70 82.97 23.70H90.90C91.20 23.70 91.45 23.45 91.45 23.15V21.65C91.45 21.34 91.70 21.10 92.00 21.10H93.10C93.40 21.10 93.65 21.34 93.65 21.65V23.15C93.65 23.45 93.90 23.70 94.20 23.70H102.11C102.41 23.70 102.66 23.45 102.66 23.15V21.65C102.66 21.34 102.90 21.10 103.21 21.10H104.00C104.45 21.10 104.71 21.61 104.45 21.97L103.82 22.83C103.56 23.19 103.82 23.70 104.27 23.70H114.34C114.52 23.70 114.69 23.61 114.8 23.46L116.22 21.34C116.32 21.19 116.50 21.10 116.68 21.10H118.19C118.49 21.10 118.74 21.34 118.74 21.65V23.15C118.74 23.45 118.99 23.70 119.29 23.70H127.25C127.56 23.70 127.80 23.45 127.80 23.15V21.65C127.80 21.35 128.05 21.10 128.36 21.10H129.23C129.68 21.10 129.95 21.61 129.68 21.97L129.06 22.83C128.79 23.19 129.06 23.70 129.51 23.70H139.55C139.73 23.70 139.90 23.61 140.00 23.46L141.43 21.34C141.53 21.19 141.71 21.10 141.89 21.10H143.40C143.70 21.10 143.95 21.35 143.95 21.65V23.15C143.95 23.46 144.2 23.70 144.50 23.70H152.44C152.74 23.70 152.99 23.46 152.99 23.15V20.35C152.99 20.05 152.74 19.80 152.44 19.80H0.55ZM40.14 2.37V0.84C40.14 0.54 39.89 0.29 39.59 0.29H20.04C19.73 0.29 19.48 0.54 19.48 0.84V2.37C19.48 2.67 19.73 2.92 20.04 2.92H39.59C39.89 2.92 40.14 2.67 40.14 2.37ZM102.66 2.37V0.84C102.66 0.54 102.41 0.29 102.11 0.29H94.20C93.90 0.29 93.65 0.54 93.65 0.84V2.37C93.65 2.67 93.90 2.92 94.20 2.92H102.11C102.41 2.92 102.66 2.67 102.66 2.37ZM8.82 2.04L7.70 0.52C7.60 0.37 7.43 0.29 7.26 0.29H0.55C0.24 0.29 0 0.53 0 0.84V2.37C0 2.67 0.24 2.92 0.55 2.92H8.37C8.82 2.92 9.08 2.41 8.82 2.04ZM58.54 2.92C59.09 2.92 59.30 2.20 58.84 1.90C56.94 0.68 54.60 0 51.97 0C49.33 0 46.99 0.68 45.10 1.90C44.63 2.20 44.85 2.92 45.40 2.92H58.54H58.54ZM72.07 1.98L70.54 0.45C70.44 0.35 70.30 0.29 70.15 0.29H65.94C65.64 0.29 65.39 0.54 65.39 0.84V2.37C65.39 2.67 65.64 2.92 65.94 2.92H71.68C72.17 2.92 72.42 2.33 72.07 1.98ZM91.45 2.37V0.84C91.45 0.54 91.20 0.29 90.90 0.29H87.02C86.87 0.29 86.73 0.35 86.63 0.45L85.09 1.98C84.74 2.33 84.99 2.92 85.48 2.92H90.90C91.20 2.92 91.45 2.67 91.45 2.37Z" fill="white"/> </svg></span>
   <div class="readout"><button id="sound" class="sound" type="button" aria-pressed="false" hidden>SOUND OFF</button><span class="pill-proto">PROTOTYPE</span><span id="depth">ALT 22,000 FT</span></div>
@@ -131,7 +173,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 <nav class="rail" id="rail" aria-label="Stations"></nav>
 
 <section class="card" aria-live="polite">
-  <div class="eyebrow" id="eyebrow">Station 01 / 10</div>
+  <div class="station-heading"><div class="eyebrow" id="eyebrow">Station 01 / 11</div><label class="station-picker"><span class="sr-only">Choose a station</span><select id="station-picker" aria-label="Choose a station"><option value="" disabled selected>Stations</option></select></label></div>
   <h1 id="title">A Signal in the Desert</h1>
   <p id="desc">High desert, about 3,600 feet up. North of town, something is transmitting.</p>
   <div class="dots" id="dots" role="group" aria-label="Jump to a station"></div>
@@ -787,6 +829,8 @@ const tagEls = LABELS.map(L => { const el = document.createElement(L.go !== unde
   el.textContent = L.text; if (L.go !== undefined){ el.type='button'; el.addEventListener('click', () => go(L.go)); } el.hidden = true; labelsEl.appendChild(el); return el; });
 
 function renderCard(){
+  const backdrop=document.getElementById('scene-backdrop');
+  if (backdrop) backdrop.style.backgroundImage='url("stations/'+PHOTOS[stop]+'.jpg")';
   const s = STOPS[stop];
   $('eyebrow').textContent = 'Station ' + String(stop+1).padStart(2,'0') + ' / ' + STOPS.length + ' · ' + s.eyebrow;
   $('title').textContent = s.title; $('desc').textContent = s.desc;
@@ -794,7 +838,8 @@ function renderCard(){
   $('next').textContent = stop === 0 ? 'Begin Descent' : (stop === STOPS.length-1 ? 'Start Over' : 'Next: ' + STOPS[stop+1].name);
   $('cta').hidden = stop !== STOPS.length-1;
   $('next').classList.toggle('ghost', stop === STOPS.length-1); $('next').classList.toggle('primary', stop !== STOPS.length-1);
-  $('hint').textContent = s.orbit ? 'DRAG TO ORBIT THE SITE · TAP A LABEL TO GO THERE' : 'DRAG TO LOOK AROUND · ARROW KEYS TO MOVE';
+  $('hint').textContent = (window.matchMedia('(pointer:coarse)').matches || window.innerWidth<900) ? 'SWIPE OR SCROLL UP / DOWN TO TRAVEL' : 'SCROLL UP OR DOWN · ARROW KEYS TO TRAVEL';
+  if ($('station-picker')) $('station-picker').value = '';
   [...rail.children].forEach((b,i) => b.toggleAttribute('aria-current', false) || (i===stop && b.setAttribute('aria-current','step')));
   [...dots.children].forEach((d,i) => d.classList.toggle('done', i <= stop));
 }
@@ -813,20 +858,65 @@ function go(i){
 $('next').addEventListener('click', () => go(stop === STOPS.length-1 ? 0 : stop+1));
 $('prev').addEventListener('click', () => go(stop-1));
 window.addEventListener('keydown', e => {
+  if (e.target && e.target.closest && e.target.closest('input,select,textarea,[contenteditable]')) return;
   if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') && (e.key === ' ' || e.key === 'Enter')) return;
   if (['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); if (stop < STOPS.length-1) go(stop+1); }
   if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); go(stop-1); }
 });
-let wheelAcc = 0, wheelLock = 0;
-canvas.addEventListener('wheel', e => { e.preventDefault(); if (anim || performance.now() < wheelLock) return; wheelAcc += e.deltaY;
-  if (Math.abs(wheelAcc) > 80){ go(stop + (wheelAcc > 0 ? 1 : -1)); wheelAcc = 0; wheelLock = performance.now() + 600; } }, {passive:false});
+/* Wheel gestures work over the scene and controls in both directions. */
+let wheelAcc = 0, wheelLock = 0, wheelAt = 0, wheelDir = 0;
+window.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.metaKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+  const target = e.target && e.target.closest ? e.target : null;
+  if (target && target.closest('input,select,textarea,[contenteditable]')) return;
+  const panel = target && target.closest('.card,.rail');
+  if (panel && panel.scrollHeight > panel.clientHeight + 1){
+    const inside = e.deltaY < 0 ? panel.scrollTop > 0 : panel.scrollTop + panel.clientHeight < panel.scrollHeight - 1;
+    if (inside) return;
+  }
+  e.preventDefault();
+  const now = performance.now(), dir = Math.sign(e.deltaY);
+  if (!dir) return;
+  if (anim || (PHOTO_MODE && tr) || now < wheelLock){ wheelAcc = 0; wheelAt = now; return; }
+  if (dir !== wheelDir || now - wheelAt > 220) wheelAcc = 0;
+  wheelDir = dir; wheelAt = now;
+  const pixels = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+  wheelAcc += Math.min(120,Math.abs(pixels)) * dir;
+  if (Math.abs(wheelAcc) >= 80){
+    wheelAcc = 0; wheelLock = now + 900;
+    go(stop + dir);
+  }
+}, {passive:false});
 let drag = null;
-canvas.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY}; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging'); });
-canvas.addEventListener('pointermove', e => { if (!drag || anim) return; const dx = e.clientX-drag.x, dy = e.clientY-drag.y; drag = {x:e.clientX, y:e.clientY};
-  if (STOPS[stop].orbit){ yaw -= dx*0.006; pitch = Math.max(-0.55, Math.min(0.5, pitch + dy*0.004)); }
-  else { yaw = Math.max(-1.1, Math.min(1.1, yaw + dx*0.004)); pitch = Math.max(-0.7, Math.min(0.7, pitch - dy*0.0035)); } });
-const endDrag = () => { drag = null; canvas.classList.remove('dragging'); };
-canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('pointerdown', e => {
+  drag = {x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,touch:e.pointerType==='touch'};
+  canvas.setPointerCapture(e.pointerId);canvas.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', e => {
+  if (!drag || anim) return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+  const vertical=drag.touch && Math.abs(e.clientY-drag.y0)>Math.abs(e.clientX-drag.x0)*1.5;
+  if (vertical) return;
+  if (STOPS[stop].orbit){yaw-=dx*.006;pitch=Math.max(-.55,Math.min(.5,pitch+dy*.004));}
+  else {yaw=Math.max(-1.1,Math.min(1.1,yaw+dx*.004));pitch=Math.max(-.7,Math.min(.7,pitch-dy*.0035));}
+});
+const endDrag = e => {
+  if (drag && e.type!=='pointercancel' && drag.touch){
+    const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0;
+    if (Math.abs(dy)>=70 && Math.abs(dy)>Math.abs(dx)*1.5) go(stop+(dy<0?1:-1));
+  }
+  drag=null;canvas.classList.remove('dragging');
+};
+canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);
+/* Keep film framing above the card as text wraps, fonts load or orientation changes. */
+const stationPicker=$('station-picker');
+if (stationPicker){
+  STOPS.forEach((s,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=String(i+1).padStart(2,'0')+' — '+s.name;stationPicker.appendChild(option);});
+  stationPicker.addEventListener('change',()=>{if(stationPicker.value!=='')go(+stationPicker.value);});
+}
+const syncCardHeight=()=>document.documentElement.style.setProperty('--card-height',Math.ceil(document.querySelector('.card').getBoundingClientRect().height)+'px');
+if (window.ResizeObserver)new ResizeObserver(syncCardHeight).observe(document.querySelector('.card'));
+window.addEventListener('resize',()=>{syncCardHeight();renderCard();});syncCardHeight();
 
 /* ---------- photoreal navigation (concepts/README.md has how the plates were made) ----------
    Every station is a photograph with real people in it. Moving between stations plays a filmed transition clip when there is one
@@ -843,13 +933,13 @@ if (PHOTO_MODE){
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = (i === 0 ? 'transitions/01-02-aerial' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only' : i === 3 ? 'transitions/04-05-walk' : i === 7 ? 'transitions/08-09-native-frames' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only' : i === 3 ? 'transitions/04-05-walk' : i === 7 ? 'transitions/08-09-native-frames' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
-    v.dataset.src = (+k === 0 ? 'loops/01-traffic' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only' : +k === 4 ? 'loops/05-admission-continuous' : +k === 5 ? 'loops/06-guide' : +k === 8 ? 'loops/09-native-frames' : +k === 10 ? 'loops/11-crowd-reshoot' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
-    const l = {v, ready:false, restart:+k === 0 ? 2.2 : +k === 1 ? 2 : +k === 2 ? 7.4 : +k === 3 ? 0.5 : +k === 4 ? 31/30 : +k === 5 ? 0.6 : +k === 8 ? 0 : +k === 10 ? 8 : undefined, roadStart:+k === 0 ? 2.2 : undefined};
+    v.dataset.src = (+k === 0 ? 'loops/01-city-intro' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only' : +k === 4 ? 'loops/05-admission-continuous' : +k === 5 ? 'loops/06-guide' : +k === 8 ? 'loops/09-native-frames' : +k === 10 ? 'loops/11-crowd-reshoot' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    const l = {v, ready:false, restart:+k === 0 ? 10.8 : +k === 1 ? 2 : +k === 2 ? 7.4 : +k === 3 ? 0.5 : +k === 4 ? 31/30 : +k === 5 ? 0.6 : +k === 8 ? 0 : +k === 10 ? 8 : undefined, roadStart:+k === 0 ? 10.8 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
@@ -869,7 +959,7 @@ if (PHOTO_MODE){
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    fetch(+k === 0 ? 'loops/01-traffic.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 2 ? 'loops/03-joined-standby.json' : +k === 3 ? 'loops/04-road-only.json' : +k === 4 ? 'loops/05-admission-continuous.json' : +k === 5 ? 'loops/06-guide.json' : +k === 8 ? 'loops/09-native-frames.json' : +k === 10 ? 'loops/11-crowd-reshoot.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
+    fetch(+k === 0 ? 'loops/01-city-intro.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 2 ? 'loops/03-joined-standby.json' : +k === 3 ? 'loops/04-road-only.json' : +k === 4 ? 'loops/05-admission-continuous.json' : +k === 5 ? 'loops/06-guide.json' : +k === 8 ? 'loops/09-native-frames.json' : +k === 10 ? 'loops/11-crowd-reshoot.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
@@ -895,8 +985,8 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   const SKIP_FILM = {9:1};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to);
   tr = {from, to, cleanAerial, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
-  if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 2.2)){
-    warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + 5000; tr.dur = 9000;
+  if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 10.8)){
+    warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + Math.max(5000,((loops[0].roadStart || 10.8)-loops[0].v.currentTime)*1000+2000); tr.dur = tr.roadDeadline-now+9000;
     return tr.dur;
   }
   const filmWait = from === 1 && to === 2 ? 12000 : 3000;
@@ -918,7 +1008,7 @@ function updatePlates(now){
   const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
   if (tr && tr.pendingRoad){
     const road = loops[0];
-    if ((videoReady(road) && road.v.currentTime >= (road.roadStart || 2.2)) || now > tr.roadDeadline){
+    if ((videoReady(road) && road.v.currentTime >= (road.roadStart || 10.8)) || now > tr.roadDeadline){
       tr.pendingRoad = false;
       if (videoReady(clips[0])) startTransition(clips[0], now);
       else { tr.pending = clips[0]; tr.waitUntil = now + 3000; }
