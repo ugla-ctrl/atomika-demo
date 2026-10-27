@@ -15,3 +15,20 @@ Live at https://demo.atomikafest.com
 - Hosted on GitHub Pages; `CNAME` sets the custom domain.
 
 Layout follows historical engineering records, satellite views, the LiDAR views and renders in the sponsor deck, and the festival map. Interior geometry is approximate.
+
+
+## Film player performance
+
+The default tour loads `film-player.js` without initializing Three.js, WebGL, scene textures or procedural geometry. The optional `?3d` view loads its libraries and `scene-player.js` on demand.
+
+The current station's main and prepared repeat players load first. Once the visible film decodes, the outgoing transition and next station's main player preload. Previous video sources release after the handoff; revisiting a station reloads its original media. Hidden tabs pause film playback and resume without consuming transition deadlines. Idle UI work runs at 10Hz; transitions use animation frames and native video always keeps its encoded frame rate.
+
+This optimization changes no video assets, source resolution, bitrate, timing or playback rate. Some existing footage is 720p; this change preserves it rather than presenting an upscale as native 1080p.
+
+Checks (Node, no packages required):
+
+```sh
+node tests/player.cjs
+node tests/navigation.cjs
+node tests/scheduler.cjs
+```
