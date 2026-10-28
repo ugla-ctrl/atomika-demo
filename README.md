@@ -32,3 +32,6 @@ node tests/player.cjs
 node tests/navigation.cjs
 node tests/scheduler.cjs
 ```
+
+
+Station 5–6 doorway revision: the approved wide shot retains the cooler; the close doorway shot uses a 1920×1080 Kling O1 edit joined to the original stair footage at the matching camera position. The moving guide scene remains. The stitched film runs at 24fps at natural speed, with MP4 and WebM delivery.

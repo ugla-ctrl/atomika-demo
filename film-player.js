@@ -160,7 +160,7 @@ if (window.ResizeObserver)new ResizeObserver(syncCardHeight).observe(document.qu
 window.addEventListener('resize',()=>{syncCardHeight();renderCard();});syncCardHeight();
 
 const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
-const PHOTOS = {0:'01-roswell-paced', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry-clear', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
+const PHOTOS = {0:'01-roswell-paced', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry-wide', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
 const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
 const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current photo: dissolve into them instead of cutting */
 const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
@@ -169,12 +169,12 @@ if (PHOTO_MODE){
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only' : i === 3 ? 'transitions/04-05-entry-clear' : i === 4 ? 'transitions/05-06-entry-clear' : i === 7 ? 'transitions/08-09-native-frames' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only' : i === 3 ? 'transitions/04-05-entry-wide' : i === 4 ? 'transitions/05-06-doorway-hd' : i === 7 ? 'transitions/08-09-native-frames' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
-    v.dataset.src = (+k === 0 ? 'loops/01-city-paced' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only' : +k === 4 ? 'loops/05-entry-clear' : +k === 5 ? 'loops/06-guide' : +k === 8 ? 'loops/09-native-frames' : +k === 10 ? 'loops/11-crowd-reshoot' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    v.dataset.src = (+k === 0 ? 'loops/01-city-paced' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only' : +k === 4 ? 'loops/05-entry-wide' : +k === 5 ? 'loops/06-guide' : +k === 8 ? 'loops/09-native-frames' : +k === 10 ? 'loops/11-crowd-reshoot' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
     const l = {v, ready:false, restart:+k === 0 ? 10.8 : +k === 1 ? 2 : +k === 2 ? 7.4 : +k === 3 ? 0.5 : +k === 4 ? 31/30 : +k === 5 ? 0.6 : +k === 8 ? 0 : +k === 10 ? 8 : undefined, roadStart:+k === 0 ? 10.8 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
@@ -195,7 +195,7 @@ if (PHOTO_MODE){
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    fetch(+k === 0 ? 'loops/01-city-paced.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 2 ? 'loops/03-joined-standby.json' : +k === 3 ? 'loops/04-road-only.json' : +k === 4 ? 'loops/05-entry-clear.json' : +k === 5 ? 'loops/06-guide.json' : +k === 8 ? 'loops/09-native-frames.json' : +k === 10 ? 'loops/11-crowd-reshoot.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
+    fetch(+k === 0 ? 'loops/01-city-paced.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 2 ? 'loops/03-joined-standby.json' : +k === 3 ? 'loops/04-road-only.json' : +k === 4 ? 'loops/05-entry-wide.json' : +k === 5 ? 'loops/06-guide.json' : +k === 8 ? 'loops/09-native-frames.json' : +k === 10 ? 'loops/11-crowd-reshoot.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
