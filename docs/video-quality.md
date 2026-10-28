@@ -13,6 +13,6 @@ The six previously 1280×720 active files listed below are delivered as 1920×10
 
 Method: Lanczos resize and gentle spatial sharpening (luma 0.25), H.264 CRF20 with an 8Mbps ceiling and fast-start MP4, plus VP9 WebM. All original frame counts and timing retained. Repeat restart metadata is unchanged. No new credits were spent.
 
-Other active files have 1080p encoded dimensions, but some contain reused 720p footage. In particular, Station 11 exterior remains the approved 720p crowd source inside a 1080p delivery file; Station 10 arrival contains an original 720p tunnel lead before its newly generated 1080p shot. Encoded dimensions alone are not evidence of native detail.
+Other active files have 1080p encoded dimensions, but some contain reused 720p footage. Station 11 now uses a newly generated native 1920×1080 crowd shot at 24fps and normal speed (243 frames, 10.125 seconds). Its matched arrival preserves the approved flight body and shares the new loop’s first second. Station 10 arrival still contains an original 720p tunnel lead before its newly generated 1080p shot. Encoded dimensions alone are not evidence of native detail.
 
 Small visual improvements should be assessed against the original at the same displayed size. Upscaling cannot restore absent fine detail, repair anatomy or remove pre-existing generative artifacts. Nearby-media loading and hidden-tab pause remain enabled; larger HD files can still need more bandwidth than their 720p originals.
