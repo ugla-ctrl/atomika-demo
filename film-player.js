@@ -43,7 +43,7 @@ const STOPS = [
   {name:'The Site', eyebrow:'Surface', title:'The Site', desc:'From above, only a stairwell, a hatch, and two enormous doors give it away.', orbit:true},
   {name:'Entry', eyebrow:'Surface · Entry', title:'The Entry', desc:'The only way the crew came in. One long flight of stairs drops beneath the desert to a pair of blast doors.'},
   {name:'Stair Shaft', eyebrow:'Below grade', title:'The Stair Shaft', desc:'Past the blast doors, switchback stairs drop through a concrete shaft that serves every level, from the crew rooms to the tunnel.'},
-  {name:'Launch Control', eyebrow:'LCC · Level −1 · 1962', title:'Launch Control, 1962', desc:'The upper chamber returns to its alert posture. A crew of five works the panels as if the order could come at any moment.'},
+  {name:'Launch Control', eyebrow:'LCC · Level −1 · 1962', title:'Launch Control, 1962', desc:'The upper chamber returns to its alert posture. Crew members work the main console as if the order could come at any moment.'},
   {name:'Deep Space', eyebrow:'LCC · Level −2 · Immersive', title:'Deep Space', desc:'Below the crew, the walls dissolve into moving pictures of the cosmos. A different kind of transmission.'},
   {name:'Tunnel', eyebrow:'Below grade', title:'The Tunnel', desc:'Forty feet of corrugated steel from the base of the stair shaft to the silo, sealed by blast doors.'},
   {name:'The Silo', eyebrow:'Silo', title:'The Silo', desc:'One hundred seventy-four feet down and fifty-two across. Look down.'},
@@ -160,7 +160,7 @@ if (window.ResizeObserver)new ResizeObserver(syncCardHeight).observe(document.qu
 window.addEventListener('resize',()=>{syncCardHeight();renderCard();});syncCardHeight();
 
 const PHOTO_MODE = !/[?&]3d\b/.test(location.search);
-const PHOTOS = {0:'01-roswell-paced', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry-wide', 5:'06-stair-shaft', 6:'07-launch-control-1962', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
+const PHOTOS = {0:'01-roswell-paced', 1:'02-approach', 2:'03-festival-grounds', 3:'04-the-site', 4:'05-entry-wide', 5:'06-stair-shaft', 6:'07-single-console', 7:'08-deep-space', 8:'09-tunnel', 9:'10-the-silo', 10:'11-through-the-doors'};
 const CLIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];  /* station indexes i that have transitions/<i+1>-<i+2>.mp4 */
 const SOFT_START = {3:1, 5:1};  /* clips that no longer start on the current photo: dissolve into them instead of cutting */
 const plates = {}, clips = {}, loops = {}, pad2 = n => String(n).padStart(2, '0');
@@ -169,17 +169,18 @@ if (PHOTO_MODE){
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only' : i === 3 ? 'transitions/04-05-entry-wide' : i === 4 ? 'transitions/05-06-doorway-hd' : i === 7 ? 'transitions/08-09-native-frames' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only' : i === 3 ? 'transitions/04-05-entry-wide' : i === 4 ? 'transitions/05-06-doorway-hd' : i === 5 ? 'transitions/06-07-single-console' : i === 6 ? 'transitions/07-08-stair-walk' : i === 7 ? 'transitions/08-09-native-frames' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
-    v.dataset.src = (+k === 0 ? 'loops/01-city-paced' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only' : +k === 4 ? 'loops/05-entry-wide' : +k === 5 ? 'loops/06-guide' : +k === 8 ? 'loops/09-native-frames' : +k === 10 ? 'loops/11-crowd-reshoot' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
-    const l = {v, ready:false, restart:+k === 0 ? 10.8 : +k === 1 ? 2 : +k === 2 ? 7.4 : +k === 3 ? 0.5 : +k === 4 ? 31/30 : +k === 5 ? 0.6 : +k === 8 ? 0 : +k === 10 ? 8 : undefined, roadStart:+k === 0 ? 10.8 : undefined};
+    v.dataset.src = (+k === 0 ? 'loops/01-city-paced' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only' : +k === 4 ? 'loops/05-entry-wide' : +k === 5 ? 'loops/06-guide' : +k === 6 ? 'loops/07-single-console' : +k === 8 ? 'loops/09-native-frames' : +k === 10 ? 'loops/11-crowd-reshoot' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
+    const l = {v, ready:false, introPace:+k === 7, restart:+k === 0 ? 10.8 : +k === 1 ? 2 : +k === 2 ? 7.4 : +k === 3 ? 0.5 : +k === 4 ? 31/30 : +k === 5 ? 0.6 : +k === 6 ? 0 : +k === 8 ? 0 : +k === 10 ? 8 : undefined, roadStart:+k === 0 ? 10.8 : undefined};
     v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
       if (reduce || e.currentTarget !== l.v) return;
+      l.cycles = (l.cycles || 0) + 1;
       const active = l.v, spare = l.spare;
       if (spare && l.primed && spare.readyState >= 2 && !spare.seeking && !spare.error){
         /* Decode the next traffic, laser, crowd or entry-loop frame on a second video before exchanging players. */
@@ -189,13 +190,13 @@ if (PHOTO_MODE){
       } else { active.currentTime = l.restart || 0; active.play().catch(() => {}); }
     };
     v.addEventListener('ended', repeat);
-    if ((+k === 0 || +k === 1 || +k === 2 || +k === 3 || +k === 4 || +k === 5 || +k === 8 || +k === 10) && !reduce){
+    if ((+k === 0 || +k === 1 || +k === 2 || +k === 3 || +k === 4 || +k === 5 || +k === 6 || +k === 8 || +k === 10) && !reduce){
       const spare = document.createElement('video'); spare.muted = true; spare.playsInline = true;
       spare.setAttribute('playsinline', ''); spare.preload = 'none'; spare.dataset.src = v.dataset.src;
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
     }
-    fetch(+k === 0 ? 'loops/01-city-paced.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 2 ? 'loops/03-joined-standby.json' : +k === 3 ? 'loops/04-road-only.json' : +k === 4 ? 'loops/05-entry-wide.json' : +k === 5 ? 'loops/06-guide.json' : +k === 8 ? 'loops/09-native-frames.json' : +k === 10 ? 'loops/11-crowd-reshoot.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
+    fetch(+k === 0 ? 'loops/01-city-paced.json' : +k === 1 ? 'loops/02-lasers.json' : +k === 2 ? 'loops/03-joined-standby.json' : +k === 3 ? 'loops/04-road-only.json' : +k === 4 ? 'loops/05-entry-wide.json' : +k === 5 ? 'loops/06-guide.json' : +k === 6 ? 'loops/07-single-console.json' : +k === 8 ? 'loops/09-native-frames.json' : +k === 10 ? 'loops/11-crowd-reshoot.json' : 'loops/' + pad2(+k + 1) + '.json').then(r => r.json()).then(j => { l.restart = j.restart; l.roadStart = j.roadStart; primeEntryLoop(l); }).catch(() => {}); });
 }
 function primeEntryLoop(l){
   if (!l.spare || l.primed || l.restart === undefined || l.spare.readyState < 1) return;
@@ -233,12 +234,20 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   const SKIP_FILM = {9:1};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to,true);
   const festivalFlight = from === 1 && to === 2;
-  tr = {from, to, cleanAerial, festivalFlight, clipStart:festivalFlight ? 0.6 : 0, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: festivalFlight ? 300 : cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  const sharedTail = to > from && (to === 6 || to === 7) ? 1 : 0;
+  tr = {from, to, cleanAerial, festivalFlight, sharedTail, walkRate:to > from && to === 7 ? 0.65 : 1, arrivalRate:to === 7 ? 0.75 : 1, clipStart:festivalFlight ? 0.6 : 0, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: from === 6 && to === 7 ? 60 : festivalFlight ? 300 : cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 10.8)){
     warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + Math.max(5000,((loops[0].roadStart || 10.8)-loops[0].v.currentTime)*1000+2000); tr.dur = tr.roadDeadline-now+9000;
     return tr.dur;
   }
-  const filmWait = from === 1 && to === 2 ? 12000 : 3000;
+  /* The departure reference is the room's last frame. Finish its current gesture
+     before continuing into the stair walk, rather than dissolving two poses. */
+  if (from === 6 && to === 7 && !reduce && videoReady(loops[6])){
+    warmClip(6); tr.pendingRoom = true; tr.roomCycle = loops[6].cycles || 0;
+    tr.roomDeadline = now + Math.max(2000, (loops[6].v.duration - loops[6].v.currentTime)*1000 + 1500);
+    tr.dur = tr.roomDeadline-now+15000; return tr.dur;
+  }
+  const filmWait = festivalFlight || sharedTail ? 12000 : 3000;
   if (c && !videoReady(c) && !reduce){ warmClip(to - 1); tr.pending = c; tr.waitUntil = now + filmWait; tr.dur = filmWait + 600; return filmWait + 9000; } /* hold briefly while the clip loads */
   startTransition(videoReady(c) && !reduce ? c : null, now);
   return tr.dur; }
@@ -249,12 +258,23 @@ function startInitialStationEntry(){
   warmLoop(4); photoTransition(4, 5);
 }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
-  if (c){ tr.clip = c; c.v.currentTime = tr.clipStart || 0; c.v.playbackRate = 1; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000 + 4000); }
+  if (c){ tr.clip = c; c.v.currentTime = tr.clipStart || 0; c.v.playbackRate = tr.walkRate; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000/(tr.walkRate || 1) + 4000); }
   else { tr.clip = null; tr.dur = reduce ? 350 : (tr.cleanAerial ? 1200 : 4200); }
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
 function updatePlates(now){
   if (!PHOTO_MODE){ photoCover = false; return; }
   const pan = (x, y) => 'translate(' + (-Math.max(-1, Math.min(1, x))*3.5).toFixed(2) + '%,' + (Math.max(-1, Math.min(1, y))*3.5).toFixed(2) + '%)';
+  if (tr && tr.pendingRoom){
+    const room = loops[6];
+    if ((room.cycles || 0) !== tr.roomCycle || room.v.currentTime >= room.v.duration - 1/24 || now > tr.roomDeadline){
+      tr.pendingRoom = false;
+      if (videoReady(clips[6])) startTransition(clips[6], now);
+      else { tr.pending = clips[6]; tr.waitUntil = now + 12000; }
+    } else {
+      room.v.style.opacity = '1'; room.v.style.zIndex = '2'; playLoop(room);
+      photoCover = true; canvas.style.opacity = '0'; return;
+    }
+  }
   if (tr && tr.pendingRoad){
     const road = loops[0];
     if ((videoReady(road) && road.v.currentTime >= (road.roadStart || 10.8)) || now > tr.roadDeadline){
@@ -274,6 +294,9 @@ function updatePlates(now){
     } }
   let p = tr ? Math.min(1, (now - tr.t0)/tr.dur) : 1;
   if (tr && tr.clip){ const v = tr.clip.v, d = v.duration || 0, ct = v.currentTime;
+    /* Give walking a calmer pace, matching the destination pace before the shared arrival
+       footage so both players keep the same motion and timing. */
+    if (tr.sharedTail && d) v.playbackRate = tr.walkRate + (tr.arrivalRate-tr.walkRate)*smooth(0, 2, ct - (d - tr.sharedTail - 2));
     /* Film progress follows decoded playback, so stalls cannot finish the transition early. */
     if (d) p = Math.max(0, Math.min(1, ct/d));
     if (v.error){ startTransition(null, now); p = 0; }
@@ -317,7 +340,7 @@ function updatePlates(now){
   const clipActive = tr && tr.clip;
   const filmMs = clipActive ? Math.max(1000, (tr.clip.v.duration || 4)*1000) : 0;
   const intro = clipActive ? (tr.festivalFlight ? smooth(0, tr.fadeMs, Math.max(0, tr.clip.v.currentTime - tr.clipStart)*1000) : smooth(0, Math.min(0.4, tr.fadeMs/filmMs), p)) : 0;
-  const endFade = clipActive ? smooth(1 - Math.min(0.4, (tr.cleanAerial ? 450 : 900)/filmMs), 1, p) : 0;
+  const endFade = clipActive ? smooth(1 - Math.min(0.4, (tr.sharedTail ? tr.sharedTail*1000 : tr.cleanAerial ? 450 : 900)/filmMs), 1, p) : 0;
   if (clipActive){
     const pl = plates[tr.from];
     if (pl && pl.ready) pl.img.style.opacity = '1';
@@ -328,11 +351,11 @@ function updatePlates(now){
     /* Decode the arrival frame before compositing it over the film. */
     const l = loops[tr.to];
     if (l && !l.armed && p > 0.5){ l.armed = true; l.v.pause(); l.v.currentTime = 0; }
-    /* Station 3 begins with the flight's final 27 frames. Keep those frames
-       aligned if either decoder stalls, rather than playing two clocks apart. */
-    if (tr.festivalFlight && l && l.armed && endFade > 0){
-      const arrivalTime = Math.max(0, tr.clip.v.currentTime - (tr.clip.v.duration - 0.9));
-      if (!l.v.seeking && Math.abs(l.v.currentTime - arrivalTime) > 0.1) l.v.currentTime = arrivalTime;
+    /* Matched arrivals share their last frames with the destination's opening.
+       Align both decoders so people do not ghost or restart at the handoff. */
+    if ((tr.festivalFlight || tr.sharedTail) && l && l.armed && endFade > 0){
+      const arrivalTime = Math.max(0, tr.clip.v.currentTime - (tr.clip.v.duration - (tr.sharedTail || 0.9)));
+      if (!l.v.seeking && Math.abs(l.v.currentTime - arrivalTime) > (tr.sharedTail ? 1/24 : 0.1)) l.v.currentTime = arrivalTime;
       if (tr.lastFlightTime !== tr.clip.v.currentTime) tr.lastFlightChangeAt = now;
       tr.arrivalStalled = now - tr.lastFlightChangeAt > 100;
       tr.lastFlightTime = tr.clip.v.currentTime;
@@ -344,6 +367,8 @@ function updatePlates(now){
     clips[k].v.style.opacity = on ? intro.toFixed(3) : '0';
   }
   for (const k in loops){ const l = loops[k], i = +k; let o = 0;
+    /* Deep Space opens gently, then reaches its usual pace before the repeat body. */
+    if (l.introPace) l.v.playbackRate = 0.75 + 0.25*smooth(4, 7, l.v.currentTime);
     /* Retain the last decoded frame during a seek rather than flashing the still photo. */
     const visibleFrame = l.ready && !l.v.error && Number(l.v.style.opacity) > 0;
     if (!reduce && (videoReady(l) || visibleFrame)){
@@ -355,7 +380,7 @@ function updatePlates(now){
       else if (tr && i === tr.to) o = tr.clip ? endFade : smooth(0.15, 0.85, p);
     }
     l.v.style.zIndex = tr && i === tr.from ? '2' : '5';
-    if (tr && tr.festivalFlight && i === tr.to && tr.arrivalStalled){ l.v.pause(); }
+    if (tr && (tr.festivalFlight || tr.sharedTail) && i === tr.to && tr.arrivalStalled){ l.v.pause(); }
     else if (o > 0 || (!tr && i === stop && videoReady(l))){ playLoop(l); }
     else { if (!l.v.paused) l.v.pause(); }
     if (o >= 0.999) cover = true;
@@ -395,10 +420,10 @@ document.addEventListener('visibilitychange',()=>{
     wake();
   }
 });
-/* soundtrack: browsers only allow sound after a tap, so it starts on the first interaction and loops for the whole journey */
+/* Soundtrack: review links require an explicit sound-button press; ordinary visits start after interaction. */
 { const bgm = document.getElementById('bgm'), sbtn = document.getElementById('sound');
   if (bgm && bgm.getAttribute('src')){
-    sbtn.hidden = false; let wantSound = true, started = false;
+    sbtn.hidden = false; let wantSound = !new URLSearchParams(location.search).has('review'), started = false;
     const setLabel = () => { const on = !bgm.paused; sbtn.textContent = on ? 'SOUND ON' : 'TAP FOR SOUND'; sbtn.setAttribute('aria-pressed', on ? 'true' : 'false'); };
     const fadeTo = v => { const v0 = bgm.volume, t0 = performance.now(); const step = () => { const k = Math.min(1, (performance.now()-t0)/1800); bgm.volume = v0 + (v-v0)*k; if (k < 1) requestAnimationFrame(step); }; step(); };
     const start = e => { if ((e && e.target === sbtn) || started || !wantSound) return; started = true; bgm.volume = 0;
