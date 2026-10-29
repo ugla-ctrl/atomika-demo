@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 /* Film playback does not initialize WebGL, scene textures or the optional 3D tour. */
-const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = document.getElementById('c');
 canvas.setAttribute('aria-label','ATOMIKA film tour. Swipe or scroll up and down, or use Next and Back to travel.');
 const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
@@ -168,15 +168,15 @@ if (PHOTO_MODE){
   Object.keys(PHOTOS).forEach(k => { const img = (+k === 0 && document.getElementById('aerial-firstpaint')) || new Image(); img.alt = ''; img.decoding = 'async'; const pl = {img, ready:!!(img.complete && img.naturalWidth), t0:0, src:'stations/' + PHOTOS[k] + '.jpg'};
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
-  CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+  CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.setAttribute('muted', ''); v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only-hd' : i === 3 ? 'transitions/04-05-entry-wide-hd' : i === 4 ? 'transitions/05-06-doorway-hd' : i === 5 ? 'transitions/06-07-single-console' : i === 6 ? 'transitions/07-08-stair-walk' : i === 7 ? 'transitions/08-09-native-frames-hd' : i === 8 ? 'transitions/09-10-empty-silo' : i === 9 ? 'transitions/10-11-crowd-cycle-hd' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
-  Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
+  Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.setAttribute('muted', ''); v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
     /* Station 1 approaches the road once, then repeats only its forward-moving traffic body. */
     v.dataset.src = (+k === 0 ? 'loops/01-city-paced' : +k === 1 ? 'loops/02-lasers' : +k === 2 ? 'loops/03-joined-standby' : +k === 3 ? 'loops/04-road-only-hd' : +k === 4 ? 'loops/05-entry-wide-hd' : +k === 5 ? 'loops/06-guide' : +k === 6 ? 'loops/07-single-console' : +k === 8 ? 'loops/09-native-frames-hd' : +k === 9 ? 'loops/10-empty-lasers' : +k === 10 ? 'loops/11-crowd-cycle-hd' : 'loops/' + pad2(+k + 1)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm');
     const l = {v, ready:false, introPace:+k === 7, restart:+k === 0 ? 10.8 : +k === 1 ? 2 : +k === 2 ? 7.4 : +k === 3 ? 0.5 : +k === 4 ? 31/30 : +k === 5 ? 0.6 : +k === 6 ? 0 : +k === 8 ? 0 : +k === 9 ? 0 : +k === 10 ? 0 : undefined, roadStart:+k === 0 ? 10.8 : undefined};
-    v.addEventListener('loadeddata', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
+    v.addEventListener('loadeddata', () => { l.ready = true; }); v.addEventListener('canplay', () => { l.ready = true; }); $('photos').appendChild(v); loops[k] = l;   /* A decoded first frame is enough; keep the outgoing layer underneath if buffering resumes. */
     /* the dwell file is the shot once, then a body that connects end to start: at the end, continue from the body's keyframe */
     const repeat = e => {
       if (reduce || e.currentTarget !== l.v) return;
@@ -187,11 +187,11 @@ if (PHOTO_MODE){
         spare.style.opacity = active.style.opacity; spare.style.zIndex = active.style.zIndex;
         active.style.opacity = '0'; l.v = spare; l.spare = active; l.primed = false; l.playing = false;
         playLoop(l); primeEntryLoop(l);
-      } else { active.currentTime = l.restart || 0; active.play().catch(() => {}); }
+      } else { active.currentTime = l.restart || 0; playLoop(l); }
     };
     v.addEventListener('ended', repeat);
     if ((+k === 0 || +k === 1 || +k === 2 || +k === 3 || +k === 4 || +k === 5 || +k === 6 || +k === 8 || +k === 9 || +k === 10) && !reduce){
-      const spare = document.createElement('video'); spare.muted = true; spare.playsInline = true;
+      const spare = document.createElement('video'); spare.muted = true; spare.defaultMuted = true; spare.setAttribute('muted', ''); spare.playsInline = true;
       spare.setAttribute('playsinline', ''); spare.preload = 'none'; spare.dataset.src = v.dataset.src;
       spare.addEventListener('loadedmetadata', () => primeEntryLoop(l)); spare.addEventListener('ended', repeat);
       $('photos').appendChild(spare); l.spare = spare;
@@ -204,6 +204,8 @@ function primeEntryLoop(l){
 }
 function warmLoop(k, withSpare=false){ const l=loops[k]; if(!l)return;
   if(!l.v.getAttribute('src')){ l.v.src=l.v.dataset.src;l.v.preload='auto';l.v.load(); }
+  /* Request playback before loadeddata: mobile browsers may defer decoding until play(). */
+  if(+k===stop && !tr && !reduce)playLoop(l);
   if(withSpare && l.spare && !l.spare.getAttribute('src')){ l.spare.src=l.spare.dataset.src;l.spare.preload='auto';l.spare.load(); }
 }
 function releaseVideo(v){
@@ -223,7 +225,23 @@ function retainNearbyMedia(){
 function warmClip(i){ const c = clips[i]; if (c && !c.v.src){ c.v.src = c.v.dataset.src; c.v.preload = 'auto'; c.v.load(); } }
 let tr = null, queuedStop = null, arrivedAt = 0, photoCover = false;
 const videoReady = l => !!(l && l.ready && !l.v.error && l.v.readyState >= 2 && !l.v.seeking);
-function playLoop(l){ if (!reduce && l.v.paused && !l.playing){ l.playing = true; l.v.play().catch(() => {}).finally(() => { l.playing = false; }); } }
+let playbackBlocked=false;
+const playButton=document.getElementById('play-tour');
+function showPlaybackButton(){if(playButton)playButton.hidden=false;}
+function handlePlaybackBlock(error){
+  if(error && error.name==='NotAllowedError'){playbackBlocked=true;showPlaybackButton();return true;}
+  return false;
+}
+function playLoop(l){ if (!reduce && !playbackBlocked && l.v.paused && !l.playing){
+  l.playing = true; l.v.play().then(()=>{if(playButton)playButton.hidden=true;}).catch(handlePlaybackBlock).finally(() => { l.playing = false; });
+} }
+if(playButton)playButton.addEventListener('click',()=>{
+  /* This explicit gesture also opts into motion when the OS requests reduced motion. */
+  reduce=false;playbackBlocked=false;playButton.hidden=true;
+  warmLoop(stop,true);
+  const v=tr && (tr.clip || tr.pending) ? (tr.clip || tr.pending).v : loops[stop].v;
+  v.muted=true;v.play().catch(error=>{handlePlaybackBlock(error);showPlaybackButton();});wake();
+});
 /* called by go(): returns the transition length in ms in photo mode */
 function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   { const pl = plates[to]; if (pl && !pl.img.src) pl.img.src = pl.src; }
@@ -258,7 +276,7 @@ function startInitialStationEntry(){
   warmLoop(4); photoTransition(4, 5);
 }
 function startTransition(c, now){ tr.t0 = now; tr.pending = null;
-  if (c){ tr.clip = c; c.v.currentTime = tr.clipStart || 0; c.v.playbackRate = tr.walkRate; c.v.style.transform = ''; c.v.play().catch(() => { if (tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000/(tr.walkRate || 1) + 4000); }
+  if (c){ tr.clip = c; c.v.currentTime = tr.clipStart || 0; c.v.playbackRate = tr.walkRate; c.v.style.transform = ''; c.v.play().catch(error => { if (!handlePlaybackBlock(error) && tr && tr.clip === c) startTransition(null, performance.now()); }); tr.dur = Math.max(1500, (c.v.duration || 4)*1000/(tr.walkRate || 1) + 4000); }
   else { tr.clip = null; tr.dur = reduce ? 350 : (tr.cleanAerial ? 1200 : 4200); }
   if (anim){ anim.t0 = now; anim.dur = tr.dur; } }
 function updatePlates(now){
@@ -381,7 +399,7 @@ function updatePlates(now){
     }
     l.v.style.zIndex = tr && i === tr.from ? '2' : '5';
     if (tr && (tr.festivalFlight || tr.sharedTail) && i === tr.to && tr.arrivalStalled){ l.v.pause(); }
-    else if (o > 0 || (!tr && i === stop && videoReady(l))){ playLoop(l); }
+    else if (o > 0 || (!tr && i === stop && !reduce)){ playLoop(l); }
     else { if (!l.v.paused) l.v.pause(); }
     if (o >= 0.999) cover = true;
     l.v.style.opacity = o.toFixed(3);
@@ -416,7 +434,7 @@ document.addEventListener('visibilitychange',()=>{
     const dt=hiddenAt===null?0:now-hiddenAt;hiddenAt=null;
     if(anim)anim.t0+=dt;
     if(tr){tr.t0+=dt;tr.aerialWaitAt+=dt;if(tr.waitUntil)tr.waitUntil+=dt;if(tr.roadDeadline)tr.roadDeadline+=dt;if(tr.roomDeadline)tr.roomDeadline+=dt;if(tr.handoffAt)tr.handoffAt+=dt;
-      if(tr.clip && !tr.clip.v.ended)tr.clip.v.play().catch(()=>{});}
+      if(tr.clip && !tr.clip.v.ended)tr.clip.v.play().catch(handlePlaybackBlock);}
     wake();
   }
 });
@@ -436,7 +454,7 @@ document.addEventListener('visibilitychange',()=>{
 /* deep link: ?station=N (1-based) opens straight at that station */
 { const m = /[?&]station=(\d+)/.exec(location.search); if (m){ stop = Math.max(0, Math.min(STOPS.length-1, (+m[1]) - 1)); u = STOPK[stop]; } }
 renderCard();
-if(!reduce)warmLoop(stop,true);
+if(!reduce)warmLoop(stop,true);else showPlaybackButton();
 startInitialStationEntry();
 wake();
 })();

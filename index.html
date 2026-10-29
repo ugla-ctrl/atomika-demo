@@ -76,6 +76,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 .btn.primary{flex:1 1 auto;padding:0 20px;background:var(--orange);border:0;color:#000}
 .btn.primary:hover{background:#FF9440}
 .btn.link{flex:1 1 auto;background:var(--blue);color:#fff;border:0}
+#play-tour{flex:none;width:100%;min-height:44px}
 .hint{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:#7C7C7C}
 .rail{max-height:calc(100dvh - 132px);overflow-y:auto;overscroll-behavior:contain;position:fixed;z-index:6;right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px}
 .rail button{display:flex;gap:10px;align-items:center;justify-content:flex-end;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:#8A8A8A;font-family:var(--display);font-weight:700;font-size:13px;cursor:pointer;text-align:right}
@@ -187,6 +188,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 <nav class="rail" id="rail" aria-label="Stations"></nav>
 
 <section class="card" aria-live="polite">
+  <button id="play-tour" class="btn primary" type="button" hidden>▶ Play animation</button>
   <div class="station-heading"><div class="eyebrow" id="eyebrow">Station 01 / 11</div><label class="station-picker"><span class="sr-only">Choose a station</span><select id="station-picker" aria-label="Choose a station"><option value="" disabled selected>Stations</option></select></label></div>
   <h1 id="title">A Signal in the Desert</h1>
   <p id="desc">High desert, about 3,600 feet up. North of town, something is transmitting.</p>
@@ -202,7 +204,7 @@ h1{margin:0;font-size:clamp(28px,5.4vw,40px);line-height:.98;font-weight:700;fon
 <script>
 (async function(){
   const sceneMode=/[?&]3d\b/.test(location.search);
-  const scripts=sceneMode?['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js'].concat('scene-player.js?v=20261028') : ['film-player.js?v=20261029-station11-crowd-cycle'];
+  const scripts=sceneMode?['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js'].concat('scene-player.js?v=20261028') : ['film-player.js?v=20261029-mobile-playback'];
   try{for(const src of scripts)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.body.appendChild(s);});}
   catch(e){document.body.insertAdjacentHTML('beforeend','<div class="fallback">The tour could not load. Please reload to try again.</div>');}
 })();
