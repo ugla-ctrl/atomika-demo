@@ -360,6 +360,10 @@ function updatePlates(now){
   const intro = clipActive ? (tr.festivalFlight ? smooth(0, tr.fadeMs, Math.max(0, tr.clip.v.currentTime - tr.clipStart)*1000) : smooth(0, Math.min(0.4, tr.fadeMs/filmMs), p)) : 0;
   const endFade = clipActive ? smooth(1 - Math.min(0.4, (tr.sharedTail ? tr.sharedTail*1000 : tr.cleanAerial ? 450 : 900)/filmMs), 1, p) : 0;
   if (clipActive){
+    /* Match the guide's portrait crop before the arrival blend, then release it
+       gently during departure. Desktop and landscape retain centered framing. */
+    if(tr.clip===clips[4])tr.clip.v.style.setProperty('--phone-focus',(50-25*smooth(tr.clip.v.duration-3,tr.clip.v.duration-1,tr.clip.v.currentTime))+'%');
+    if(tr.clip===clips[5])tr.clip.v.style.setProperty('--phone-focus',(25+25*smooth(0,2.5,tr.clip.v.currentTime))+'%');
     const pl = plates[tr.from];
     if (pl && pl.ready) pl.img.style.opacity = '1';
     if (!videoReady(loops[tr.to]) && plates[tr.to] && plates[tr.to].ready){

@@ -8,7 +8,7 @@ const STOPS=Array.from({length:11},()=>({})), STOPK=Array.from({length:11},(_,i)
 function renderCard(){}; function wake(){};
 const canvas={style:{}}, location={search:''}, performance={now:()=>clock};
 const smooth=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)};
-class Media { constructor(){this.style={};this.dataset={};this.paused=true;this.readyState=0;this.currentTime=0;this.duration=4;this.listeners={};} setAttribute(){} getAttribute(k){return this[k]||null} removeAttribute(k){delete this[k]} canPlayType(){return 'probably'} addEventListener(k,f){this.listeners[k]=f} load(){} pause(){this.paused=true} play(){this.paused=false;return Promise.resolve()} }
+class Media { constructor(){this.style={setProperty(k,v){this[k]=v}};this.dataset={};this.paused=true;this.readyState=0;this.currentTime=0;this.duration=4;this.listeners={};} setAttribute(){} getAttribute(k){return this[k]||null} removeAttribute(k){delete this[k]} canPlayType(){return 'probably'} addEventListener(k,f){this.listeners[k]=f} load(){} pause(){this.paused=true} play(){this.paused=false;return Promise.resolve()} }
 const document={createElement:()=>new Media(),getElementById:()=>null}, Image=class extends Media {};
 const $=()=>({appendChild(){}}), fetch=()=>new Promise(()=>{});
 function ready(i){plates[i].ready=true;loops[i].ready=true;loops[i].v.readyState=4}
