@@ -169,7 +169,7 @@ if (PHOTO_MODE){
     if (+k === 0){ img.style.inset = '0'; img.style.width = '100%'; img.style.height = '100%'; }
     img.onload = () => { pl.ready = true; }; $('photos').appendChild(img); plates[k] = pl; });
   CLIPS.forEach(i => { const v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.setAttribute('muted', ''); v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
-    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-joined' : i === 2 ? 'transitions/03-04-road-only-hd' : i === 3 ? 'transitions/04-05-entry-wide-hd' : i === 4 ? 'transitions/05-06-doorway-hd' : i === 5 ? 'transitions/06-07-single-console' : i === 6 ? 'transitions/07-08-stair-walk' : i === 7 ? 'transitions/08-09-native-frames-hd' : i === 8 ? 'transitions/09-10-empty-silo' : i === 9 ? 'transitions/10-11-crowd-cycle-hd' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
+    v.dataset.src = (i === 0 ? 'transitions/01-02-matched-arrival' : i === 1 ? 'transitions/02-03-curved-hd' : i === 2 ? 'transitions/03-04-road-only-hd' : i === 3 ? 'transitions/04-05-entry-wide-hd' : i === 4 ? 'transitions/05-06-doorway-hd' : i === 5 ? 'transitions/06-07-single-console' : i === 6 ? 'transitions/07-08-stair-walk' : i === 7 ? 'transitions/08-09-native-frames-hd' : i === 8 ? 'transitions/09-10-empty-silo' : i === 9 ? 'transitions/10-11-crowd-cycle-hd' : 'transitions/' + pad2(i+1) + '-' + pad2(i+2)) + (v.canPlayType('video/mp4; codecs="avc1.640028"') ? '.mp4' : '.webm'); const c = {v, ready:false};
     v.addEventListener('loadeddata', () => { c.ready = true; }); $('photos').appendChild(v); clips[i] = c; });
   /* a living loop per station: the last seconds of the film that arrives there, played back and forth, so nothing ever freezes */
   Object.keys(PHOTOS).forEach(k => { const v = document.createElement('video'); v.muted = true; v.defaultMuted = true; v.setAttribute('muted', ''); v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'none';
@@ -252,8 +252,9 @@ function photoTransition(from, to){ if (!PHOTO_MODE) return 0;
   const SKIP_FILM = {};
   const c = to > from && !SKIP_FILM[to - 1] ? clips[to - 1] : null, now = performance.now(); if (!reduce) warmLoop(to,true);
   const festivalFlight = from === 1 && to === 2;
+  const festivalArrival = to === 2 && to > from;
   const sharedTail = to > from && (to === 6 || to === 7 || to === 9 || to === 10) ? 1 : 0;
-  tr = {from, to, cleanAerial, festivalFlight, sharedTail, walkRate:to > from && to === 7 ? 0.65 : 1, arrivalRate:to === 7 ? 0.75 : 1, clipStart:festivalFlight ? 0.6 : 0, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: (from === 6 && to === 7) || (from === 9 && to === 10) ? 60 : festivalFlight ? 300 : cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
+  tr = {from, to, cleanAerial, festivalFlight, festivalArrival, sharedTail, entryOffset:festivalArrival ? 0.9 : 0, walkRate:to > from && to === 7 ? 0.65 : 1, arrivalRate:to === 7 ? 0.75 : 1, clipStart:festivalFlight ? 0.6 : 0, aerialWaitAt:now, t0:now, clip:null, fadeIn: true, fadeMs: (from === 6 && to === 7) || (from === 9 && to === 10) ? 60 : festivalFlight ? 300 : cleanAerial ? 600 : (to !== from + 1 || SOFT_START[to - 1]) ? 1400 : 900};
   if (cleanAerial && !reduce && loops[0].v.currentTime < (loops[0].roadStart || 10.8)){
     warmLoop(0); warmClip(0); tr.pendingRoad = true; tr.roadDeadline = now + Math.max(5000,((loops[0].roadStart || 10.8)-loops[0].v.currentTime)*1000+2000); tr.dur = tr.roadDeadline-now+9000;
     return tr.dur;
@@ -328,7 +329,13 @@ function updatePlates(now){
     }
   }
   if (tr && tr.cleanAerial && !tr.clip && !videoReady(loops[tr.to]) && !loops[tr.to].v.error && now - tr.aerialWaitAt < 5000){ tr.t0 = now; p = 0; }
-  if (tr && p >= 1){ if (tr.clip) tr.clip.v.pause();
+  if (tr && p >= 1){
+    /* Finish the curved flight on the destination's exact shared moving frame. */
+    if (tr.festivalArrival && tr.clip && videoReady(loops[tr.to])){
+      const v=loops[tr.to].v,tail=(tr.entryOffset || 0)+Math.max(0,tr.clip.v.currentTime-(tr.clip.v.duration-0.9));
+      if (Math.abs(v.currentTime-tail)>1/30) v.currentTime=tail;
+    }
+    if (tr.clip) tr.clip.v.pause();
     if (videoReady(loops[tr.to])) loops[tr.to].shownAt = now - 650;
     tr = null; arrivedAt = now; }
   if (!tr && !reduce){
@@ -372,11 +379,11 @@ function updatePlates(now){
     }
     /* Decode the arrival frame before compositing it over the film. */
     const l = loops[tr.to];
-    if (l && !l.armed && p > 0.5){ l.armed = true; l.v.pause(); l.v.currentTime = 0; }
+    if (l && !l.armed && p > 0.5){ l.armed = true; l.v.pause(); l.v.currentTime = tr.entryOffset || 0; }
     /* Matched arrivals share their last frames with the destination's opening.
        Align both decoders so people do not ghost or restart at the handoff. */
-    if ((tr.festivalFlight || tr.sharedTail) && l && l.armed && endFade > 0){
-      const arrivalTime = Math.max(0, tr.clip.v.currentTime - (tr.clip.v.duration - (tr.sharedTail || 0.9)));
+    if ((tr.festivalArrival || tr.sharedTail) && l && l.armed && endFade > 0){
+      const arrivalTime = (tr.entryOffset || 0) + Math.max(0, tr.clip.v.currentTime - (tr.clip.v.duration - (tr.sharedTail || 0.9)));
       if (!l.v.seeking && Math.abs(l.v.currentTime - arrivalTime) > (tr.sharedTail ? 1/24 : 0.1)) l.v.currentTime = arrivalTime;
       if (tr.lastFlightTime !== tr.clip.v.currentTime) tr.lastFlightChangeAt = now;
       tr.arrivalStalled = now - tr.lastFlightChangeAt > 100;
@@ -401,8 +408,10 @@ function updatePlates(now){
       else if (tr && i === tr.from) o = 1;
       else if (tr && i === tr.to) o = tr.clip ? endFade : smooth(0.15, 0.85, p);
     }
+    /* Release the hidden outgoing decoder once the curved film fully covers it. */
+    if (tr && tr.festivalArrival && tr.clip && i === tr.from && intro >= 0.999) o = 0;
     l.v.style.zIndex = tr && i === tr.from ? '2' : '5';
-    if (tr && (tr.festivalFlight || tr.sharedTail) && i === tr.to && tr.arrivalStalled){ l.v.pause(); }
+    if (tr && (tr.festivalArrival || tr.sharedTail) && i === tr.to && tr.arrivalStalled){ l.v.pause(); }
     else if (o > 0 || (!tr && i === stop && !reduce)){ playLoop(l); }
     else { if (!l.v.paused) l.v.pause(); }
     if (o >= 0.999) cover = true;
