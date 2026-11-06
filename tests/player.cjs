@@ -67,7 +67,7 @@ test('exterior handoff stays on the shared decoder clock through a stall',`ready
 
 console.log(count+' regression checks passed');
 
-test('curved festival arrival skips the old shared intro and keeps the exact moving tail clock',`ready(1);ready(2);stop=1;clips[1].ready=true;clips[1].v.readyState=4;clips[1].v.duration=8;go(2);assert(clips[1].v.dataset.src.includes('02-03-curved-hd'));assert.equal(tr.entryOffset,.9);clips[1].v.currentTime=7.5;updatePlates(7500);assert(Math.abs(loops[2].v.currentTime-1.3)<.001);clips[1].v.currentTime=8;clips[1].v.ended=true;updatePlates(8000);assert.equal(tr,null);assert.equal(loops[2].v.paused,false);assert(Math.abs(loops[2].v.currentTime-1.8)<.001);`);
+test('curved festival arrival skips the old shared intro and keeps the exact moving tail clock',`ready(1);ready(2);stop=1;clips[1].ready=true;clips[1].v.readyState=4;clips[1].v.duration=8;go(2);assert(clips[1].v.dataset.src.includes('02-03-reshoot-hd'));assert.equal(tr.entryOffset,.9);clips[1].v.currentTime=7.5;updatePlates(7500);assert(Math.abs(loops[2].v.currentTime-1.3)<.001);clips[1].v.currentTime=8;clips[1].v.ended=true;updatePlates(8000);assert.equal(tr,null);assert.equal(loops[2].v.paused,false);assert(Math.abs(loops[2].v.currentTime-1.8)<.001);`);
 
 test('direct Station1-to-3 navigation uses the same matched moving arrival clock',`ready(0);ready(2);stop=0;clips[1].ready=true;clips[1].v.readyState=4;clips[1].v.duration=8;go(2);assert(tr.festivalArrival);assert.equal(tr.entryOffset,.9);assert.equal(tr.clipStart,0);clips[1].v.currentTime=7.5;updatePlates(7500);assert(Math.abs(loops[2].v.currentTime-1.3)<.001);clips[1].v.currentTime=8;clips[1].v.ended=true;updatePlates(8000);assert.equal(tr,null);assert(Math.abs(loops[2].v.currentTime-1.8)<.001);`);
 
